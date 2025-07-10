@@ -17,6 +17,7 @@
 #include QMK_KEYBOARD_H
 #include "common/bt_task.h"
 #include <lib/lib8tion/lib8tion.h>
+#include "usb_main.h"
 
 enum __layers {
     PAD_B,
@@ -223,7 +224,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 eeconfig_update_kb(per_info.raw);
                 rgb_matrix_config.hsv.h = indicator_color_tab[per_info.smd_color_index][0];
                 rgb_matrix_config.hsv.s = indicator_color_tab[per_info.smd_color_index][1];
-                rgb_matrix_config.hsv.v = rgb_matrix_config.hsv.v;
+                // rgb_matrix_config.hsv.v = rgb_matrix_config.hsv.v;
             }
         }
             return false;
@@ -333,7 +334,7 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
 
         if (current_layer == 0 || current_layer == 2) {
             // PAD_B 层：显示系统 NumLock 状态
-            should_show_numlock = (host_keyboard_led_state().num_lock && (bts_info.bt_info.paired || dev_info.devs == DEVS_USB));
+            should_show_numlock = (host_keyboard_led_state().num_lock && (bts_info.bt_info.paired || ((dev_info.devs == DEVS_USB) && (USB_DRIVER.state == USB_ACTIVE))));
         } else if (current_layer == 1 || current_layer == 3) {
             // 自定义数字层：显示自定义 NumLock 状态
             should_show_numlock = custom_numlock_state;
@@ -363,5 +364,5 @@ void keyboard_post_init_user() {
 
     rgb_matrix_config.hsv.h = indicator_color_tab[per_info.smd_color_index][0];
     rgb_matrix_config.hsv.s = indicator_color_tab[per_info.smd_color_index][1];
-    rgb_matrix_config.hsv.v = rgb_matrix_config.hsv.v;
+    // rgb_matrix_config.hsv.v = rgb_matrix_config.hsv.v;
 }

@@ -20,6 +20,7 @@
 
 #define NUM_LONG_PRESS_KEYS (sizeof(long_pressed_keys) / sizeof(long_pressed_keys_t))
 #define LED_OFF_STANDBY_MS (10 * 60 * 1000)
+#define KEY_NUM 8
 
 #ifdef BT_DEBUG_MODE
 #    define BT_DEBUG_INFO(fmt, ...) dprintf(fmt, ##__VA_ARGS__)
@@ -198,6 +199,148 @@ uint32_t last_total_time = 0;
 
 static bool is_charging = false;
 
+void register_mouse(uint8_t mouse_keycode, bool pressed);
+/** \brief Utilities for actions. (FIXME: Needs better description)
+ *
+ * FIXME: Needs documentation.
+ */
+__attribute__((weak)) void register_code(uint8_t code) {
+    if (dev_info.devs) {
+        bts_process_keys(code, 1, dev_info.devs, keymap_config.no_gui, KEY_NUM);
+        bts_task(dev_info.devs);
+        while (bts_is_busy()) {
+        }
+    } else {
+        if (code == KC_NO) {
+            return;
+
+#ifdef LOCKING_SUPPORT_ENABLE
+        } else if (KC_LOCKING_CAPS_LOCK == code) {
+#    ifdef LOCKING_RESYNC_ENABLE
+            // Resync: ignore if caps lock already is on
+            if (host_keyboard_leds() & (1 << USB_LED_CAPS_LOCK)) return;
+#    endif
+            add_key(KC_CAPS_LOCK);
+            send_keyboard_report();
+            wait_ms(TAP_HOLD_CAPS_DELAY);
+            del_key(KC_CAPS_LOCK);
+            send_keyboard_report();
+
+        } else if (KC_LOCKING_NUM_LOCK == code) {
+#    ifdef LOCKING_RESYNC_ENABLE
+            if (host_keyboard_leds() & (1 << USB_LED_NUM_LOCK)) return;
+#    endif
+            add_key(KC_NUM_LOCK);
+            send_keyboard_report();
+            wait_ms(100);
+            del_key(KC_NUM_LOCK);
+            send_keyboard_report();
+
+        } else if (KC_LOCKING_SCROLL_LOCK == code) {
+#    ifdef LOCKING_RESYNC_ENABLE
+            if (host_keyboard_leds() & (1 << USB_LED_SCROLL_LOCK)) return;
+#    endif
+            add_key(KC_SCROLL_LOCK);
+            send_keyboard_report();
+            wait_ms(100);
+            del_key(KC_SCROLL_LOCK);
+            send_keyboard_report();
+#endif
+
+        } else if (IS_BASIC_KEYCODE(code)) {
+            // TODO: should push command_proc out of this block?
+            if (command_proc(code)) return;
+
+            // Force a new key press if the key is already pressed
+            // without this, keys with the same keycode, but different
+            // modifiers will be reported incorrectly, see issue #1708
+            if (is_key_pressed(code)) {
+                del_key(code);
+                send_keyboard_report();
+            }
+            add_key(code);
+            send_keyboard_report();
+        } else if (IS_MODIFIER_KEYCODE(code)) {
+            add_mods(MOD_BIT(code));
+            send_keyboard_report();
+
+#ifdef EXTRAKEY_ENABLE
+        } else if (IS_SYSTEM_KEYCODE(code)) {
+            host_system_send(KEYCODE2SYSTEM(code));
+        } else if (IS_CONSUMER_KEYCODE(code)) {
+            host_consumer_send(KEYCODE2CONSUMER(code));
+#endif
+
+        } else if (IS_MOUSE_KEYCODE(code)) {
+            register_mouse(code, true);
+        }
+    }
+}
+
+/** \brief Utilities for actions. (FIXME: Needs better description)
+ *
+ * FIXME: Needs documentation.
+ */
+__attribute__((weak)) void unregister_code(uint8_t code) {
+    if (dev_info.devs) {
+        bts_process_keys(code, 0, dev_info.devs, keymap_config.no_gui, KEY_NUM);
+        bts_task(dev_info.devs);
+        while (bts_is_busy()) {
+        }
+    } else {
+        if (code == KC_NO) {
+            return;
+
+#ifdef LOCKING_SUPPORT_ENABLE
+        } else if (KC_LOCKING_CAPS_LOCK == code) {
+#    ifdef LOCKING_RESYNC_ENABLE
+            // Resync: ignore if caps lock already is off
+            if (!(host_keyboard_leds() & (1 << USB_LED_CAPS_LOCK))) return;
+#    endif
+            add_key(KC_CAPS_LOCK);
+            send_keyboard_report();
+            del_key(KC_CAPS_LOCK);
+            send_keyboard_report();
+
+        } else if (KC_LOCKING_NUM_LOCK == code) {
+#    ifdef LOCKING_RESYNC_ENABLE
+            if (!(host_keyboard_leds() & (1 << USB_LED_NUM_LOCK))) return;
+#    endif
+            add_key(KC_NUM_LOCK);
+            send_keyboard_report();
+            del_key(KC_NUM_LOCK);
+            send_keyboard_report();
+
+        } else if (KC_LOCKING_SCROLL_LOCK == code) {
+#    ifdef LOCKING_RESYNC_ENABLE
+            if (!(host_keyboard_leds() & (1 << USB_LED_SCROLL_LOCK))) return;
+#    endif
+            add_key(KC_SCROLL_LOCK);
+            send_keyboard_report();
+            del_key(KC_SCROLL_LOCK);
+            send_keyboard_report();
+#endif
+
+        } else if (IS_BASIC_KEYCODE(code)) {
+            del_key(code);
+            send_keyboard_report();
+        } else if (IS_MODIFIER_KEYCODE(code)) {
+            del_mods(MOD_BIT(code));
+            send_keyboard_report();
+
+#ifdef EXTRAKEY_ENABLE
+        } else if (IS_SYSTEM_KEYCODE(code)) {
+            host_system_send(0);
+        } else if (IS_CONSUMER_KEYCODE(code)) {
+            host_consumer_send(0);
+#endif
+
+        } else if (IS_MOUSE_KEYCODE(code)) {
+            register_mouse(code, false);
+        }
+    }
+}
+
 // ===========================================
 // 线程定义
 // ===========================================
@@ -349,31 +492,31 @@ bool process_record_bt(uint16_t keycode, keyrecord_t *record) {
             if ((keycode > QK_MODS) && (keycode <= QK_MODS_MAX)) {
                 if (QK_MODS_GET_MODS(keycode) & 0x1) {
                     if (QK_MODS_GET_MODS(keycode) & 0x10)
-                        bts_process_keys(KC_RCTL, record->event.pressed, dev_info.devs, keymap_config.no_gui);
+                        bts_process_keys(KC_RCTL, record->event.pressed, dev_info.devs, keymap_config.no_gui, KEY_NUM);
                     else
-                        bts_process_keys(KC_LCTL, record->event.pressed, dev_info.devs, keymap_config.no_gui);
+                        bts_process_keys(KC_LCTL, record->event.pressed, dev_info.devs, keymap_config.no_gui, KEY_NUM);
                 }
                 if (QK_MODS_GET_MODS(keycode) & 0x2) {
                     if (QK_MODS_GET_MODS(keycode) & 0x10)
-                        bts_process_keys(KC_RSFT, record->event.pressed, dev_info.devs, keymap_config.no_gui);
+                        bts_process_keys(KC_RSFT, record->event.pressed, dev_info.devs, keymap_config.no_gui, KEY_NUM);
                     else
-                        bts_process_keys(KC_LSFT, record->event.pressed, dev_info.devs, keymap_config.no_gui);
+                        bts_process_keys(KC_LSFT, record->event.pressed, dev_info.devs, keymap_config.no_gui, KEY_NUM);
                 }
                 if (QK_MODS_GET_MODS(keycode) & 0x4) {
                     if (QK_MODS_GET_MODS(keycode) & 0x10)
-                        bts_process_keys(KC_RALT, record->event.pressed, dev_info.devs, keymap_config.no_gui);
+                        bts_process_keys(KC_RALT, record->event.pressed, dev_info.devs, keymap_config.no_gui, KEY_NUM);
                     else
-                        bts_process_keys(KC_LALT, record->event.pressed, dev_info.devs, keymap_config.no_gui);
+                        bts_process_keys(KC_LALT, record->event.pressed, dev_info.devs, keymap_config.no_gui, KEY_NUM);
                 }
                 if (QK_MODS_GET_MODS(keycode) & 0x8) {
                     if (QK_MODS_GET_MODS(keycode) & 0x10)
-                        bts_process_keys(KC_RGUI, record->event.pressed, dev_info.devs, keymap_config.no_gui);
+                        bts_process_keys(KC_RGUI, record->event.pressed, dev_info.devs, keymap_config.no_gui, KEY_NUM);
                     else
-                        bts_process_keys(KC_LGUI, record->event.pressed, dev_info.devs, keymap_config.no_gui);
+                        bts_process_keys(KC_LGUI, record->event.pressed, dev_info.devs, keymap_config.no_gui, KEY_NUM);
                 }
-                retval = bts_process_keys(QK_MODS_GET_BASIC_KEYCODE(keycode), record->event.pressed, dev_info.devs, keymap_config.no_gui);
+                retval = bts_process_keys(QK_MODS_GET_BASIC_KEYCODE(keycode), record->event.pressed, dev_info.devs, keymap_config.no_gui, KEY_NUM);
             } else {
-                retval = bts_process_keys(keycode, record->event.pressed, dev_info.devs, keymap_config.no_gui);
+                retval = bts_process_keys(keycode, record->event.pressed, dev_info.devs, keymap_config.no_gui, KEY_NUM);
             }
         }
     }
@@ -1008,12 +1151,13 @@ static void execute_factory_reset(void) {
                 rgb_matrix_config.hsv.h = 170;
                 rgb_matrix_config.mode  = RGB_MATRIX_CUSTOM_EFFECT_OFF;
             }
+            rgb_matrix_mode_noeeprom(RGB_MATRIX_CUSTOM_EFFECT_OFF);
             if (readPin(BT_MODE_SW_PIN) && (dev_info.devs != DEVS_USB)) {
                 bts_send_vendor(v_clear);
-                bts_info.bt_info.pairing = false;
+                // bts_info.bt_info.pairing = false;
                 bt_switch_mode(DEVS_HOST1, DEVS_USB, false);
-                last_total_time  = timer_read32();
-                indicator_status = 2;
+                last_total_time = timer_read32();
+                // indicator_status = 2;
             }
             break;
 
@@ -1025,15 +1169,16 @@ static void execute_factory_reset(void) {
                 rgb_matrix_config.hsv.h = 170;
                 rgb_matrix_config.mode  = RGB_MATRIX_CUSTOM_EFFECT_OFF;
             }
+            rgb_matrix_mode_noeeprom(RGB_MATRIX_CUSTOM_EFFECT_OFF);
             break;
 
         case 3: // BLE reset
             if (readPin(BT_MODE_SW_PIN) && (dev_info.devs != DEVS_USB) && (dev_info.devs != DEVS_2_4G)) {
                 bts_send_vendor(v_clear);
-                bts_info.bt_info.pairing = false;
+                // bts_info.bt_info.pairing = false;
                 bt_switch_mode(dev_info.devs, DEVS_HOST1, false);
-                last_total_time  = timer_read32();
-                indicator_status = 2;
+                last_total_time = timer_read32();
+                // indicator_status = 2;
             }
             break;
     }

@@ -230,8 +230,6 @@ void eeconfig_init_kb(void) {
     rgb_matrix_config.hsv.h = 170;
     rgb_matrix_config.mode  = RGB_MATRIX_CUSTOM_EFFECT_OFF;
 
-    // validate_per_info_ranges(); // 验证范围
-
     eeconfig_update_kb(per_info.raw);
     eeconfig_update_rgb_matrix(&rgb_matrix_config);
 
