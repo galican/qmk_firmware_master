@@ -18,7 +18,7 @@
 #include "common/bt_task.h"
 #include <lib/lib8tion/lib8tion.h>
 #include "dynamic_keymap.h"
-#include "m91.h"
+#include "usb_main.h"
 
 extern uint8_t sleep_time;
 
@@ -229,7 +229,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 eeconfig_update_kb(per_info.raw);
                 rgb_matrix_config.hsv.h = indicator_color_tab[per_info.smd_color_index][0];
                 rgb_matrix_config.hsv.s = indicator_color_tab[per_info.smd_color_index][1];
-                rgb_matrix_config.hsv.v = rgb_matrix_config.hsv.v;
+                // rgb_matrix_config.hsv.v = rgb_matrix_config.hsv.v;
             }
         }
             return false;
@@ -244,7 +244,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 eeconfig_update_kb(per_info.raw);
                 rgb_matrix_config.hsv.h = indicator_color_tab[per_info.smd_color_index][0];
                 rgb_matrix_config.hsv.s = indicator_color_tab[per_info.smd_color_index][1];
-                rgb_matrix_config.hsv.v = rgb_matrix_config.hsv.v;
+                // rgb_matrix_config.hsv.v = rgb_matrix_config.hsv.v;
             }
         }
             return false;
@@ -354,17 +354,17 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
     hsv.v = per_info.ind_brightness;
     rgb   = hsv_to_rgb(hsv);
 
-    if (!per_info.eco_tog_flag && host_keyboard_led_state().num_lock && ((bts_info.bt_info.paired) || (dev_info.devs == DEVS_USB))) {
+    if (!per_info.eco_tog_flag && host_keyboard_led_state().num_lock && ((bts_info.bt_info.paired) || ((dev_info.devs == DEVS_USB) && (USB_DRIVER.state == USB_ACTIVE)))) {
         rgb_matrix_set_color(NUM_LOCK_IND_INDEX, rgb.r, rgb.g, rgb.b);
     } else {
         rgb_matrix_set_color(NUM_LOCK_IND_INDEX, 0, 0, 0);
     }
-    if (!per_info.eco_tog_flag && host_keyboard_led_state().caps_lock && ((bts_info.bt_info.paired) || (dev_info.devs == DEVS_USB))) {
+    if (!per_info.eco_tog_flag && host_keyboard_led_state().caps_lock && ((bts_info.bt_info.paired) || ((dev_info.devs == DEVS_USB) && (USB_DRIVER.state == USB_ACTIVE)))) {
         rgb_matrix_set_color(CAPS_LOCK_IND_INDEX, rgb.r, rgb.g, rgb.b);
     } else {
         rgb_matrix_set_color(CAPS_LOCK_IND_INDEX, 0, 0, 0);
     }
-    if (!per_info.eco_tog_flag && host_keyboard_led_state().scroll_lock && ((bts_info.bt_info.paired) || (dev_info.devs == DEVS_USB))) {
+    if (!per_info.eco_tog_flag && host_keyboard_led_state().scroll_lock && ((bts_info.bt_info.paired) || ((dev_info.devs == DEVS_USB) && (USB_DRIVER.state == USB_ACTIVE)))) {
         rgb_matrix_set_color(SCROLL_LOCK_IND_INDEX, rgb.r, rgb.g, rgb.b);
     } else {
         rgb_matrix_set_color(SCROLL_LOCK_IND_INDEX, 0, 0, 0);
@@ -376,5 +376,5 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
 void keyboard_post_init_user() {
     rgb_matrix_config.hsv.h = indicator_color_tab[per_info.smd_color_index][0];
     rgb_matrix_config.hsv.s = indicator_color_tab[per_info.smd_color_index][1];
-    rgb_matrix_config.hsv.v = rgb_matrix_config.hsv.v;
+    // rgb_matrix_config.hsv.v = rgb_matrix_config.hsv.v;
 }

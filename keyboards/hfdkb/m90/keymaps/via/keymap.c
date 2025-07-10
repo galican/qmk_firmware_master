@@ -19,7 +19,7 @@
 #include "common/bt_task.h"
 #include <lib/lib8tion/lib8tion.h>
 #include "dynamic_keymap.h"
-#include "uart.h"
+#include "usb_main.h"
 
 extern uint8_t sleep_time;
 
@@ -55,28 +55,28 @@ enum __layers {
         KC_LCTL, KC_LWIN, KC_LALT,                              KC_SPC,                             KC_RALT, KC_APP, MO(WIN_FN),KC_RCTL, KC_LEFT, KC_DOWN, KC_RGHT),
 
     [WIN_FN] = LAYOUT_87_ansi( /* FN */
-        NK_TOGG,          KC_BRID, KC_BRIU, KC_NO,   KC_NO,     KC_NO,   KC_NO,   KC_MPRV, KC_MPLY, KC_MNXT, KC_MUTE, KC_VOLD,  KC_VOLU,
-        FN_FUN,  BT_HOST1,BT_HOST2,BT_HOST3,BT_2_4G, BT_USB,    _______, _______, _______, IND_VAL, IND_HUE, RGB_HUD, RGB_HUI,  FACTORY, KC_PSCR, KC_SCRL, KC_PAUS,
-        BT_VOL,  _______, _______, _______, _______, _______,   _______, _______, _______, _______, _______, RGB_SAD, RGB_SAI,  RGB_MOD, BLE_RES, KEY_RES, _______,
-        RGB_TEST, _______, _______, _______, _______, _______,   _______, _______, _______, _______, SW_SLEP, KEY_ECO,           RGB_TOG,
-        _______,          _______, _______, _______, _______,   _______, _______, _______, _______, SW_OS,   FN_MENU,           _______,          RGB_VAI,
-        _______, WIN_LOCK,_______,                              _______,                            _______, KC_RWIN, _______,  _______, RGB_SPD, RGB_VAD, RGB_SPI),
+        NK_TOGG,           KC_BRID, KC_BRIU, KC_NO,   KC_NO,    KC_NO,   KC_NO,   KC_MPRV, KC_MPLY, KC_MNXT, KC_MUTE, KC_VOLD,  KC_VOLU,
+        FN_FUN,   BT_HOST1,BT_HOST2,BT_HOST3,BT_2_4G, BT_USB,   _______, _______, _______, IND_VAL, IND_HUE, RGB_HUD, RGB_HUI,  FACTORY, KC_PSCR, KC_SCRL, KC_PAUS,
+        BT_VOL,   _______, _______, _______, _______, _______,  _______, _______, _______, _______, _______, RGB_SAD, RGB_SAI,  RGB_MOD, BLE_RES, KEY_RES, _______,
+        RGB_TEST, _______, _______, _______, _______, _______,  _______, _______, _______, _______, SW_SLEP, KEY_ECO,           RGB_TOG,
+        _______,           _______, _______, _______, _______,  _______, _______, _______, _______, SW_OS,   FN_MENU,           _______,          RGB_VAI,
+        _______,  WIN_LOCK,_______,                             _______,                            _______, KC_RWIN, _______,  _______, RGB_SPD, RGB_VAD, RGB_SPI),
 
     [MAC_B] = LAYOUT_87_ansi( /* Base */
-        KC_ESC,          KC_BRID, KC_BRIU, KC_MCTL,  KC_NO, KC_NO, KC_NO,   KC_MPRV, KC_MPLY, KC_MNXT, KC_MUTE, KC_VOLD,  KC_VOLU,
-        KC_GRV,  KC_1,    KC_2,    KC_3,    KC_4,    KC_5,      KC_6,    KC_7,    KC_8,    KC_9,    KC_0,    KC_MINS, KC_EQL,   KC_BSPC, KC_INS,  KC_HOME, KC_PGUP,
-        KC_TAB,  KC_Q,    KC_W,    KC_E,    KC_R,    KC_T,      KC_Y,    KC_U,    KC_I,    KC_O,    KC_P,    KC_LBRC, KC_RBRC,  KC_BSLS, KC_DEL,  KC_END,  KC_PGDN,
-        KC_CAPS, KC_A,    KC_S,    KC_D,    KC_F,    KC_G,      KC_H,    KC_J,    KC_K,    KC_L,    KC_SCLN, KC_QUOT,           KC_ENT,
-        KC_LSFT,          KC_Z,    KC_X,    KC_C,    KC_V,      KC_B,    KC_N,    KC_M,    KC_COMM, KC_DOT,  KC_SLSH,           KC_RSFT, KC_UP,
-        KC_LCTL, KC_LOPT, KC_LCMD,                              KC_SPC,                             KC_RCMD, KC_APP, MO(MAC_FN),KC_RCTL, KC_LEFT, KC_DOWN, KC_RGHT),
+        KC_ESC,            KC_BRID, KC_BRIU, KC_MCTL, KC_NO,    KC_NO,   KC_NO,   KC_MPRV, KC_MPLY, KC_MNXT, KC_MUTE, KC_VOLD,  KC_VOLU,
+        KC_GRV,   KC_1,    KC_2,    KC_3,    KC_4,    KC_5,     KC_6,    KC_7,    KC_8,    KC_9,    KC_0,    KC_MINS, KC_EQL,   KC_BSPC, KC_INS,  KC_HOME, KC_PGUP,
+        KC_TAB,   KC_Q,    KC_W,    KC_E,    KC_R,    KC_T,     KC_Y,    KC_U,    KC_I,    KC_O,    KC_P,    KC_LBRC, KC_RBRC,  KC_BSLS, KC_DEL,  KC_END,  KC_PGDN,
+        KC_CAPS,  KC_A,    KC_S,    KC_D,    KC_F,    KC_G,     KC_H,    KC_J,    KC_K,    KC_L,    KC_SCLN, KC_QUOT,           KC_ENT,
+        KC_LSFT,           KC_Z,    KC_X,    KC_C,    KC_V,     KC_B,    KC_N,    KC_M,    KC_COMM, KC_DOT,  KC_SLSH,           KC_RSFT, KC_UP,
+        KC_LCTL,  KC_LOPT, KC_LCMD,                             KC_SPC,                             KC_RCMD, KC_APP, MO(MAC_FN),KC_RCTL, KC_LEFT, KC_DOWN, KC_RGHT),
 
     [MAC_FN] = LAYOUT_87_ansi( /* mac fn */
         NK_TOGG,           KC_F1,   KC_F2,   KC_F3,   KC_F4,    KC_F5,   KC_F6,   KC_F7,   KC_F8,   KC_F9,   KC_F10,  KC_F11,   KC_F12,
-        FN_FUN,  BT_HOST1,BT_HOST2,BT_HOST3,BT_2_4G, BT_USB,    _______, _______, _______, IND_VAL, IND_HUE, RGB_HUD, RGB_HUI,  FACTORY, KC_PSCR, KC_SCRL, KC_PAUS,
-        BT_VOL,  _______, _______, _______, _______, _______,   _______, _______, _______, _______, _______, RGB_SAD, RGB_SAI,  RGB_MOD, BLE_RES, KEY_RES, _______,
-        RGB_TEST, _______, _______, _______, _______, _______,   _______, _______, _______, _______, SW_SLEP, KEY_ECO,           RGB_TOG,
-        _______,          _______, _______, _______, _______,   _______, _______, _______, SW_OS,   _______, FN_MENU,           _______,          RGB_VAI,
-        KC_SPOT, KC_DND, _______,                              _______,                            _______, KC_ROPT, _______,  _______, RGB_SPD, RGB_VAD, RGB_SPI),
+        FN_FUN,   BT_HOST1,BT_HOST2,BT_HOST3,BT_2_4G, BT_USB,   _______, _______, _______, IND_VAL, IND_HUE, RGB_HUD, RGB_HUI,  FACTORY, KC_PSCR, KC_SCRL, KC_PAUS,
+        BT_VOL,   _______, _______, _______, _______, _______,  _______, _______, _______, _______, _______, RGB_SAD, RGB_SAI,  RGB_MOD, BLE_RES, KEY_RES, _______,
+        RGB_TEST, _______, _______, _______, _______, _______,  _______, _______, _______, _______, SW_SLEP, KEY_ECO,           RGB_TOG,
+        _______,           _______, _______, _______, _______,  _______, _______, _______, SW_OS,   _______, FN_MENU,           _______,          RGB_VAI,
+        KC_SPOT,  KC_DND,  _______,                             _______,                            _______, KC_ROPT, _______,  _______, RGB_SPD, RGB_VAD, RGB_SPI),
 
  };
 
@@ -360,19 +360,19 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
     rgb   = hsv_to_rgb(hsv);
 
     // 系统指示灯逻辑
-    if (!per_info.eco_tog_flag && host_keyboard_led_state().num_lock && ((bts_info.bt_info.paired) || (dev_info.devs == DEVS_USB))) {
+    if (!per_info.eco_tog_flag && host_keyboard_led_state().num_lock && ((bts_info.bt_info.paired) || ((dev_info.devs == DEVS_USB) && (USB_DRIVER.state == USB_ACTIVE)))) {
         rgb_matrix_set_color(84, rgb.r, rgb.g, rgb.b);
     } else {
         rgb_matrix_set_color(84, 0, 0, 0);
     }
 
-    if (!per_info.eco_tog_flag && host_keyboard_led_state().caps_lock && ((bts_info.bt_info.paired) || (dev_info.devs == DEVS_USB))) {
+    if (!per_info.eco_tog_flag && host_keyboard_led_state().caps_lock && ((bts_info.bt_info.paired) || ((dev_info.devs == DEVS_USB) && (USB_DRIVER.state == USB_ACTIVE)))) {
         rgb_matrix_set_color(85, rgb.r, rgb.g, rgb.b);
     } else {
         rgb_matrix_set_color(85, 0, 0, 0);
     }
 
-    if (!per_info.eco_tog_flag && host_keyboard_led_state().scroll_lock && ((bts_info.bt_info.paired) || (dev_info.devs == DEVS_USB))) {
+    if (!per_info.eco_tog_flag && host_keyboard_led_state().scroll_lock && ((bts_info.bt_info.paired) || ((dev_info.devs == DEVS_USB) && (USB_DRIVER.state == USB_ACTIVE)))) {
         rgb_matrix_set_color(86, rgb.r, rgb.g, rgb.b);
     } else {
         rgb_matrix_set_color(86, 0, 0, 0);
@@ -384,5 +384,4 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
 void keyboard_post_init_user() {
     rgb_matrix_config.hsv.h = indicator_color_tab[per_info.smd_color_index][0];
     rgb_matrix_config.hsv.s = indicator_color_tab[per_info.smd_color_index][1];
-    rgb_matrix_config.hsv.v = rgb_matrix_config.hsv.v;
 }

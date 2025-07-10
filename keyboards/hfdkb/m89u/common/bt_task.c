@@ -51,7 +51,7 @@ static bool is_wireless_mode_keycode(uint16_t keycode);
 static bool is_current_mode_wireless(void);
 static bool is_current_mode_wireless_by_devs(uint8_t devs);
 #ifdef RGB_MATRIX_ENABLE
-static void led_off_standby(void);
+// static void led_off_standby(void);
 static void open_rgb(void);
 static void close_rgb(void);
 #endif
@@ -934,13 +934,13 @@ static void update_low_voltage_state(void) {
 // ===========================================
 // RGB控制函数
 // ===========================================
-static void led_off_standby(void) {
-    if (timer_elapsed32(key_press_time) >= LED_OFF_STANDBY_MS) {
-        rgb_matrix_disable_noeeprom();
-    } else {
-        rgb_status_save = rgb_matrix_config.enable;
-    }
-}
+// static void led_off_standby(void) {
+//     if (timer_elapsed32(key_press_time) >= LED_OFF_STANDBY_MS) {
+//         rgb_matrix_disable_noeeprom();
+//     } else {
+//         rgb_status_save = rgb_matrix_config.enable;
+//     }
+// }
 
 static void close_rgb(void) {
     if (!key_press_time) {
@@ -948,11 +948,11 @@ static void close_rgb(void) {
         return;
     }
 
-    led_off_standby();
+    // led_off_standby();
 
     if (sober) {
         if (kb_sleep_flag || ((timer_elapsed32(key_press_time) >= sleep_time_table[per_info.sleep_mode]) && (sleep_time_table[per_info.sleep_mode] != 0))) {
-            bak_rgb_toggle = rgb_status_save;
+            bak_rgb_toggle = rgb_matrix_config.enable;
             sober          = false;
             close_rgb_time = timer_read32();
             rgb_matrix_disable_noeeprom();
