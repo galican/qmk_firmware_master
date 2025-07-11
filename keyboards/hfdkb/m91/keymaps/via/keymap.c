@@ -200,9 +200,10 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             return false;
         case IND_VAL: {
             if (record->event.pressed) {
-                per_info.ind_brightness = qadd8(per_info.ind_brightness, RGB_MATRIX_VAL_STEP);
-                per_info.ind_brightness = (per_info.ind_brightness > RGB_MATRIX_MAXIMUM_BRIGHTNESS) ? RGB_MATRIX_MAXIMUM_BRIGHTNESS : per_info.ind_brightness;
-                if (per_info.ind_brightness == RGB_MATRIX_MAXIMUM_BRIGHTNESS) {
+                // per_info.ind_brightness = qadd8(per_info.ind_brightness, RGB_MATRIX_VAL_STEP);
+                // per_info.ind_brightness = (per_info.ind_brightness > RGB_MATRIX_MAXIMUM_BRIGHTNESS) ? RGB_MATRIX_MAXIMUM_BRIGHTNESS : per_info.ind_brightness;
+                per_info.ind_brightness += RGB_MATRIX_VAL_STEP;
+                if (per_info.ind_brightness > RGB_MATRIX_MAXIMUM_BRIGHTNESS) {
                     per_info.ind_brightness = RGB_MATRIX_VAL_STEP;
                 }
                 eeconfig_update_kb(per_info.raw);

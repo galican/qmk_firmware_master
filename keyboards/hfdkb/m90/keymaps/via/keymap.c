@@ -204,12 +204,13 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             return false;
         case IND_VAL: {
             if (record->event.pressed) {
-                per_info.ind_brightness = qadd8(per_info.ind_brightness, RGB_MATRIX_VAL_STEP);
-                per_info.ind_brightness = (per_info.ind_brightness > RGB_MATRIX_MAXIMUM_BRIGHTNESS) ? RGB_MATRIX_MAXIMUM_BRIGHTNESS : per_info.ind_brightness;
-                eeconfig_update_kb(per_info.raw);
-                if (per_info.ind_brightness == RGB_MATRIX_MAXIMUM_BRIGHTNESS) {
+                // per_info.ind_brightness = qadd8(per_info.ind_brightness, RGB_MATRIX_VAL_STEP);
+                // per_info.ind_brightness = (per_info.ind_brightness > RGB_MATRIX_MAXIMUM_BRIGHTNESS) ? RGB_MATRIX_MAXIMUM_BRIGHTNESS : per_info.ind_brightness;
+                per_info.ind_brightness += RGB_MATRIX_VAL_STEP;
+                if (per_info.ind_brightness > RGB_MATRIX_MAXIMUM_BRIGHTNESS) {
                     per_info.ind_brightness = RGB_MATRIX_VAL_STEP;
                 }
+                eeconfig_update_kb(per_info.raw);
             }
         }
             return false;
@@ -233,7 +234,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 eeconfig_update_kb(per_info.raw);
                 rgb_matrix_config.hsv.h = indicator_color_tab[per_info.smd_color_index][0];
                 rgb_matrix_config.hsv.s = indicator_color_tab[per_info.smd_color_index][1];
-                rgb_matrix_config.hsv.v = rgb_matrix_config.hsv.v;
+                // rgb_matrix_config.hsv.v = rgb_matrix_config.hsv.v;
             }
         }
             return false;
@@ -248,7 +249,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 eeconfig_update_kb(per_info.raw);
                 rgb_matrix_config.hsv.h = indicator_color_tab[per_info.smd_color_index][0];
                 rgb_matrix_config.hsv.s = indicator_color_tab[per_info.smd_color_index][1];
-                rgb_matrix_config.hsv.v = rgb_matrix_config.hsv.v;
+                // rgb_matrix_config.hsv.v = rgb_matrix_config.hsv.v;
             }
         }
             return false;

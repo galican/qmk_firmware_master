@@ -19,14 +19,14 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define BTS_LIB_VERSION 1.2.0
+#define BTS_LIB_VERSION 1.2.1
 
 typedef enum {
     DEVS_USB = 0,
     DEVS_HOST1,
     DEVS_HOST2,
-    DEVS_2_4G,
     DEVS_HOST3,
+    DEVS_2_4G,
     DEVS_HOST4,
     DEVS_HOST5,
 } devs_t;

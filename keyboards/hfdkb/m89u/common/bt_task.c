@@ -50,6 +50,8 @@ static bool is_switch_forcing_wired_mode(void);
 static bool is_wireless_mode_keycode(uint16_t keycode);
 static bool is_current_mode_wireless(void);
 static bool is_current_mode_wireless_by_devs(uint8_t devs);
+static void handle_battery_query(void);
+static void handle_battery_query_display(void);
 #ifdef RGB_MATRIX_ENABLE
 // static void led_off_standby(void);
 static void open_rgb(void);
@@ -106,6 +108,13 @@ typedef struct {
 } long_pressed_keys_t;
 
 per_info_t per_info = {.raw = 0};
+
+typedef enum {
+    BATTERY_STATE_UNPLUGGED = 0, // No cable connected
+    BATTERY_STATE_CHARGING,      // Cable connected, charging
+    BATTERY_STATE_CHARGED_FULL   // Cable connected, fully charged
+} battery_charge_state_t;
+static battery_charge_state_t get_battery_charge_state(void);
 
 // ===========================================
 // 全局变量
@@ -652,7 +661,21 @@ static bool process_record_other(uint16_t keycode, keyrecord_t *record) {
 
         case BT_VOL: {
             if (record->event.pressed) {
-                bts_send_vendor(v_query_vol);
+                // bts_send_vendor(v_query_vol);
+                switch (get_battery_charge_state()) {
+                    case BATTERY_STATE_CHARGING:
+                        bts_send_vendor(v_query_vol_chrg);
+                        break;
+
+                    case BATTERY_STATE_CHARGED_FULL:
+                        bts_send_vendor(v_query_vol_full);
+                        break;
+
+                    case BATTERY_STATE_UNPLUGGED:
+                    default:
+                        bts_send_vendor(v_query_vol);
+                        break;
+                }
                 query_vol_flag = true;
             } else {
                 query_vol_flag = false;
@@ -1154,10 +1177,9 @@ static void execute_factory_reset(void) {
             rgb_matrix_mode_noeeprom(RGB_MATRIX_CUSTOM_EFFECT_OFF);
             if (readPin(BT_MODE_SW_PIN) && (dev_info.devs != DEVS_USB)) {
                 bts_send_vendor(v_clear);
-                // bts_info.bt_info.pairing = false;
+                wait_ms(1000);
                 bt_switch_mode(DEVS_HOST1, DEVS_USB, false);
                 last_total_time = timer_read32();
-                // indicator_status = 2;
             }
             break;
 
@@ -1175,10 +1197,9 @@ static void execute_factory_reset(void) {
         case 3: // BLE reset
             if (readPin(BT_MODE_SW_PIN) && (dev_info.devs != DEVS_USB) && (dev_info.devs != DEVS_2_4G)) {
                 bts_send_vendor(v_clear);
-                // bts_info.bt_info.pairing = false;
+                wait_ms(1000);
                 bt_switch_mode(dev_info.devs, DEVS_HOST1, false);
                 last_total_time = timer_read32();
-                // indicator_status = 2;
             }
             break;
     }
@@ -1357,12 +1378,6 @@ static void handle_low_battery_shutdow(void) {
     }
 }
 
-typedef enum {
-    BATTERY_STATE_UNPLUGGED = 0, // No cable connected
-    BATTERY_STATE_CHARGING,      // Cable connected, charging
-    BATTERY_STATE_CHARGED_FULL   // Cable connected, fully charged
-} battery_charge_state_t;
-
 static battery_charge_state_t get_battery_charge_state(void) {
 #if defined(BT_CABLE_PIN) && defined(BT_CHARGE_PIN)
     static battery_charge_state_t stable_state = BATTERY_STATE_UNPLUGGED;
@@ -1410,21 +1425,33 @@ static void handle_battery_query(void) {
 }
 
 static void handle_battery_query_display(void) {
-    if (get_highest_layer(layer_state) == 2 || get_highest_layer(layer_state) == 3) {
+    if (query_vol_flag) {
+        static uint8_t query_index[10] = {16, 17, 18, 12, 13, 14, 8, 9, 10, 20};
+        // 清空显示区域
+        for (uint8_t i = 0; i < 22; i++) {
+            rgb_matrix_set_color(i, 0, 0, 0);
+        }
+
+        // 电量显示LED
         uint8_t pvol = bts_info.bt_info.pvol;
+
+        // 计算LED数量（至少2个，最多10个）
+        uint8_t led_count = (pvol < 30) ? 2 : ((pvol / 10) > 10 ? 10 : (pvol / 10));
 
         // 根据电量确定颜色
         RGB color;
-        if (pvol < 20) {
-            color = (RGB){200, 0, 0}; // 红色
-        } else if (pvol < 95) {
-            color = (RGB){200, 200, 0}; // 黄色
+        if (pvol < 30) {
+            color = (RGB){100, 0, 0}; // 红色
+        } else if (pvol < 70) {
+            color = (RGB){100, 50, 0}; // 橙色
         } else {
-            color = (RGB){0, 200, 0}; // 绿色
+            color = (RGB){0, 100, 0}; // 绿色
         }
 
         // 点亮LED
-        rgb_matrix_set_color(3, color.r, color.g, color.b);
+        for (uint8_t i = 0; i < led_count; i++) {
+            rgb_matrix_set_color(query_index[i], color.r, color.g, color.b);
+        }
     }
 }
 
