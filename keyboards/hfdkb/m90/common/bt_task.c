@@ -1171,10 +1171,9 @@ static void handle_factory_reset_display(void) {
                     rgb_matrix_mode_noeeprom(RGB_MATRIX_CUSTOM_EFFECT_OFF);
                     if (readPin(BT_MODE_SW_PIN) && (dev_info.devs != DEVS_USB)) {
                         bts_send_vendor(v_clear);
-                        // bts_info.bt_info.pairing = false;
+                        wait_ms(1000);
                         bt_switch_mode(DEVS_HOST1, DEVS_USB, false);
                         last_total_time = timer_read32();
-                        // indicator_status = 2;
                     }
                     break;
 
@@ -1193,10 +1192,9 @@ static void handle_factory_reset_display(void) {
                 case 3: // ble reset
                     if (readPin(BT_MODE_SW_PIN) && (dev_info.devs != DEVS_USB) && (dev_info.devs != DEVS_2_4G)) {
                         bts_send_vendor(v_clear);
-                        // bts_info.bt_info.pairing = false;
+                        wait_ms(1000);
                         bt_switch_mode(dev_info.devs, DEVS_HOST1, false);
                         last_total_time = timer_read32();
-                        // indicator_status = 2;
                     }
                     break;
                 default:
