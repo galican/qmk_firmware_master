@@ -19,7 +19,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define BTS_LIB_VERSION 1.2.0
+#define BTS_LIB_VERSION 1.2.1
 
 typedef enum {
     DEVS_USB = 0,
