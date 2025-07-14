@@ -8,10 +8,10 @@
  * @copyright Copyright (c) 2023 Westberry Technology Corp., Ltd
  */
 
+#include QMK_KEYBOARD_H
 #include "common/bts_lib.h"
 #include "config.h"
 #include "gpio.h"
-#include "m78.h"
 #include "quantum.h"
 #include "rgb_matrix.h"
 #include "uart.h"
@@ -23,6 +23,8 @@
 #else
 #    define BT_DEBUG_INFO(fmt, ...)
 #endif
+#define KEY_NUM 8
+#define LOW_POWER_THRESHOLD (30) // 低电量阈值，单位为百分比
 
 // ===========================================
 // 函数声明
@@ -36,6 +38,7 @@ static void handle_blink_effects(void);
 static void handle_charging_indication(void);
 static void handle_low_battery_warning(void);
 static void handle_low_battery_shutdow(void);
+static void handle_battery_query(void);
 static void handle_battery_query_display(void);
 static void handle_bt_indicate_led(void);
 static void handle_usb_indicate_led(void);
@@ -46,10 +49,11 @@ static void close_rgb(void);
 #endif
 
 // Helper functions for better code organization
-static bool    is_bt_device(uint8_t device);
-static bool    validate_device_type(uint8_t device);
-static void    reset_bt_connection_state(void);
-static void    send_device_vendor_command(uint8_t device);
+static bool is_bt_device(uint8_t device);
+static bool validate_device_type(uint8_t device);
+static void reset_bt_connection_state(void);
+static void send_device_vendor_command(uint8_t device);
+// static void    send_device_name_command(uint8_t device);
 static uint8_t keycode_to_device_type(uint16_t keycode);
 
 extern keymap_config_t keymap_config;
@@ -84,6 +88,13 @@ typedef struct {
     uint16_t keycode;
     void (*event_cb)(uint16_t);
 } long_pressed_keys_t;
+
+typedef enum {
+    BATTERY_STATE_UNPLUGGED = 0, // No cable connected
+    BATTERY_STATE_CHARGING,      // Cable connected, charging
+    BATTERY_STATE_CHARGED_FULL   // Cable connected, fully charged
+} battery_charge_state_t;
+static battery_charge_state_t get_battery_charge_state(void);
 
 // ===========================================
 // 全局变量
@@ -159,8 +170,7 @@ static RGB      single_blink_color;
 static uint32_t single_blink_time;
 
 // 电量查询
-static bool query_vol_flag       = false;
-static bool query_vol_processing = false;
+static bool query_vol_flag = false;
 /* 电量显示LED */
 uint8_t query_index[10] = {26, 25, 24, 23, 22, 21, 20, 19, 18, 17};
 
@@ -169,6 +179,224 @@ uint32_t USB_switch_time;
 uint8_t  USB_blink_cnt;
 
 uint32_t last_total_time = 0;
+
+void register_mouse(uint8_t mouse_keycode, bool pressed);
+/** \brief Utilities for actions. (FIXME: Needs better description)
+ *
+ * FIXME: Needs documentation.
+ */
+__attribute__((weak)) void register_code(uint8_t code) {
+    if (dev_info.devs) {
+        bts_process_keys(code, 1, dev_info.devs, keymap_config.no_gui, KEY_NUM);
+        bts_task(dev_info.devs);
+        while (bts_is_busy()) {
+        }
+    } else {
+        if (code == KC_NO) {
+            return;
+
+#ifdef LOCKING_SUPPORT_ENABLE
+        } else if (KC_LOCKING_CAPS_LOCK == code) {
+#    ifdef LOCKING_RESYNC_ENABLE
+            // Resync: ignore if caps lock already is on
+            if (host_keyboard_leds() & (1 << USB_LED_CAPS_LOCK)) return;
+#    endif
+            add_key(KC_CAPS_LOCK);
+            send_keyboard_report();
+            wait_ms(TAP_HOLD_CAPS_DELAY);
+            del_key(KC_CAPS_LOCK);
+            send_keyboard_report();
+
+        } else if (KC_LOCKING_NUM_LOCK == code) {
+#    ifdef LOCKING_RESYNC_ENABLE
+            if (host_keyboard_leds() & (1 << USB_LED_NUM_LOCK)) return;
+#    endif
+            add_key(KC_NUM_LOCK);
+            send_keyboard_report();
+            wait_ms(100);
+            del_key(KC_NUM_LOCK);
+            send_keyboard_report();
+
+        } else if (KC_LOCKING_SCROLL_LOCK == code) {
+#    ifdef LOCKING_RESYNC_ENABLE
+            if (host_keyboard_leds() & (1 << USB_LED_SCROLL_LOCK)) return;
+#    endif
+            add_key(KC_SCROLL_LOCK);
+            send_keyboard_report();
+            wait_ms(100);
+            del_key(KC_SCROLL_LOCK);
+            send_keyboard_report();
+#endif
+
+        } else if (IS_BASIC_KEYCODE(code)) {
+            // TODO: should push command_proc out of this block?
+            if (command_proc(code)) return;
+
+            // Force a new key press if the key is already pressed
+            // without this, keys with the same keycode, but different
+            // modifiers will be reported incorrectly, see issue #1708
+            if (is_key_pressed(code)) {
+                del_key(code);
+                send_keyboard_report();
+            }
+            add_key(code);
+            send_keyboard_report();
+        } else if (IS_MODIFIER_KEYCODE(code)) {
+            add_mods(MOD_BIT(code));
+            send_keyboard_report();
+
+#ifdef EXTRAKEY_ENABLE
+        } else if (IS_SYSTEM_KEYCODE(code)) {
+            host_system_send(KEYCODE2SYSTEM(code));
+        } else if (IS_CONSUMER_KEYCODE(code)) {
+            host_consumer_send(KEYCODE2CONSUMER(code));
+#endif
+
+        } else if (IS_MOUSE_KEYCODE(code)) {
+            register_mouse(code, true);
+        }
+    }
+}
+
+/** \brief Utilities for actions. (FIXME: Needs better description)
+ *
+ * FIXME: Needs documentation.
+ */
+__attribute__((weak)) void unregister_code(uint8_t code) {
+    if (dev_info.devs) {
+        bts_process_keys(code, 0, dev_info.devs, keymap_config.no_gui, KEY_NUM);
+        bts_task(dev_info.devs);
+        while (bts_is_busy()) {
+        }
+    } else {
+        if (code == KC_NO) {
+            return;
+
+#ifdef LOCKING_SUPPORT_ENABLE
+        } else if (KC_LOCKING_CAPS_LOCK == code) {
+#    ifdef LOCKING_RESYNC_ENABLE
+            // Resync: ignore if caps lock already is off
+            if (!(host_keyboard_leds() & (1 << USB_LED_CAPS_LOCK))) return;
+#    endif
+            add_key(KC_CAPS_LOCK);
+            send_keyboard_report();
+            del_key(KC_CAPS_LOCK);
+            send_keyboard_report();
+
+        } else if (KC_LOCKING_NUM_LOCK == code) {
+#    ifdef LOCKING_RESYNC_ENABLE
+            if (!(host_keyboard_leds() & (1 << USB_LED_NUM_LOCK))) return;
+#    endif
+            add_key(KC_NUM_LOCK);
+            send_keyboard_report();
+            del_key(KC_NUM_LOCK);
+            send_keyboard_report();
+
+        } else if (KC_LOCKING_SCROLL_LOCK == code) {
+#    ifdef LOCKING_RESYNC_ENABLE
+            if (!(host_keyboard_leds() & (1 << USB_LED_SCROLL_LOCK))) return;
+#    endif
+            add_key(KC_SCROLL_LOCK);
+            send_keyboard_report();
+            del_key(KC_SCROLL_LOCK);
+            send_keyboard_report();
+#endif
+
+        } else if (IS_BASIC_KEYCODE(code)) {
+            del_key(code);
+            send_keyboard_report();
+        } else if (IS_MODIFIER_KEYCODE(code)) {
+            del_mods(MOD_BIT(code));
+            send_keyboard_report();
+
+#ifdef EXTRAKEY_ENABLE
+        } else if (IS_SYSTEM_KEYCODE(code)) {
+            host_system_send(0);
+        } else if (IS_CONSUMER_KEYCODE(code)) {
+            host_consumer_send(0);
+#endif
+
+        } else if (IS_MOUSE_KEYCODE(code)) {
+            register_mouse(code, false);
+        }
+    }
+}
+
+void do_code16(uint16_t code, void (*f)(uint8_t));
+
+__attribute__((weak)) void register_code16(uint16_t code) {
+    if (dev_info.devs) {
+        if (QK_MODS_GET_MODS(code) & 0x1) {
+            if (QK_MODS_GET_MODS(code) & 0x10)
+                bts_process_keys(KC_RCTL, 1, dev_info.devs, keymap_config.no_gui, KEY_NUM);
+            else
+                bts_process_keys(KC_LCTL, 1, dev_info.devs, keymap_config.no_gui, KEY_NUM);
+        }
+        if (QK_MODS_GET_MODS(code) & 0x2) {
+            if (QK_MODS_GET_MODS(code) & 0x10)
+                bts_process_keys(KC_RSFT, 1, dev_info.devs, keymap_config.no_gui, KEY_NUM);
+            else
+                bts_process_keys(KC_LSFT, 1, dev_info.devs, keymap_config.no_gui, KEY_NUM);
+        }
+        if (QK_MODS_GET_MODS(code) & 0x4) {
+            if (QK_MODS_GET_MODS(code) & 0x10)
+                bts_process_keys(KC_RALT, 1, dev_info.devs, keymap_config.no_gui, KEY_NUM);
+            else
+                bts_process_keys(KC_LALT, 1, dev_info.devs, keymap_config.no_gui, KEY_NUM);
+        }
+        if (QK_MODS_GET_MODS(code) & 0x8) {
+            if (QK_MODS_GET_MODS(code) & 0x10)
+                bts_process_keys(KC_RGUI, 1, dev_info.devs, keymap_config.no_gui, KEY_NUM);
+            else
+                bts_process_keys(KC_LGUI, 1, dev_info.devs, keymap_config.no_gui, KEY_NUM);
+        }
+        bts_process_keys(QK_MODS_GET_BASIC_KEYCODE(code), 1, dev_info.devs, keymap_config.no_gui, KEY_NUM);
+    } else {
+        if (IS_MODIFIER_KEYCODE(code) || code == KC_NO) {
+            do_code16(code, register_mods);
+        } else {
+            do_code16(code, register_weak_mods);
+        }
+        register_code(code);
+    }
+}
+
+__attribute__((weak)) void unregister_code16(uint16_t code) {
+    if (dev_info.devs) {
+        if (QK_MODS_GET_MODS(code) & 0x1) {
+            if (QK_MODS_GET_MODS(code) & 0x10)
+                bts_process_keys(KC_RCTL, 0, dev_info.devs, keymap_config.no_gui, KEY_NUM);
+            else
+                bts_process_keys(KC_LCTL, 0, dev_info.devs, keymap_config.no_gui, KEY_NUM);
+        }
+        if (QK_MODS_GET_MODS(code) & 0x2) {
+            if (QK_MODS_GET_MODS(code) & 0x10)
+                bts_process_keys(KC_RSFT, 0, dev_info.devs, keymap_config.no_gui, KEY_NUM);
+            else
+                bts_process_keys(KC_LSFT, 0, dev_info.devs, keymap_config.no_gui, KEY_NUM);
+        }
+        if (QK_MODS_GET_MODS(code) & 0x4) {
+            if (QK_MODS_GET_MODS(code) & 0x10)
+                bts_process_keys(KC_RALT, 0, dev_info.devs, keymap_config.no_gui, KEY_NUM);
+            else
+                bts_process_keys(KC_LALT, 0, dev_info.devs, keymap_config.no_gui, KEY_NUM);
+        }
+        if (QK_MODS_GET_MODS(code) & 0x8) {
+            if (QK_MODS_GET_MODS(code) & 0x10)
+                bts_process_keys(KC_RGUI, 0, dev_info.devs, keymap_config.no_gui, KEY_NUM);
+            else
+                bts_process_keys(KC_LGUI, 0, dev_info.devs, keymap_config.no_gui, KEY_NUM);
+        }
+        bts_process_keys(QK_MODS_GET_BASIC_KEYCODE(code), 0, dev_info.devs, keymap_config.no_gui, KEY_NUM);
+    } else {
+        unregister_code(code);
+        if (IS_MODIFIER_KEYCODE(code) || code == KC_NO) {
+            do_code16(code, unregister_mods);
+        } else {
+            do_code16(code, unregister_weak_mods);
+        }
+    }
+}
 
 // ===========================================
 // 线程定义
@@ -228,11 +456,12 @@ void bt_task(void) {
         bt_init_time = 0;
 
         bts_send_name(DEVS_HOST1);
-        bts_send_vendor(v_en_sleep_bt);
-        bts_send_vendor(v_en_sleep_wl);
+        // bts_send_vendor(v_en_sleep_bt);
+        // bts_send_vendor(v_en_sleep_wl);
 
-        // Send appropriate vendor command for current device
+        // send_device_name_command(dev_info.devs);
         send_device_vendor_command(dev_info.devs);
+        // Send appropriate vendor command for current device
 
         // Fallback to USB if invalid device
         if (!validate_device_type(dev_info.devs)) {
@@ -298,35 +527,7 @@ bool process_record_bt(uint16_t keycode, keyrecord_t *record) {
             while (bts_is_busy()) {
                 wait_ms(1);
             }
-            if ((keycode > QK_MODS) && (keycode <= QK_MODS_MAX)) {
-                if (QK_MODS_GET_MODS(keycode) & 0x1) {
-                    if (QK_MODS_GET_MODS(keycode) & 0x10)
-                        bts_process_keys(KC_RCTL, record->event.pressed, dev_info.devs, keymap_config.no_gui);
-                    else
-                        bts_process_keys(KC_LCTL, record->event.pressed, dev_info.devs, keymap_config.no_gui);
-                }
-                if (QK_MODS_GET_MODS(keycode) & 0x2) {
-                    if (QK_MODS_GET_MODS(keycode) & 0x10)
-                        bts_process_keys(KC_RSFT, record->event.pressed, dev_info.devs, keymap_config.no_gui);
-                    else
-                        bts_process_keys(KC_LSFT, record->event.pressed, dev_info.devs, keymap_config.no_gui);
-                }
-                if (QK_MODS_GET_MODS(keycode) & 0x4) {
-                    if (QK_MODS_GET_MODS(keycode) & 0x10)
-                        bts_process_keys(KC_RALT, record->event.pressed, dev_info.devs, keymap_config.no_gui);
-                    else
-                        bts_process_keys(KC_LALT, record->event.pressed, dev_info.devs, keymap_config.no_gui);
-                }
-                if (QK_MODS_GET_MODS(keycode) & 0x8) {
-                    if (QK_MODS_GET_MODS(keycode) & 0x10)
-                        bts_process_keys(KC_RGUI, record->event.pressed, dev_info.devs, keymap_config.no_gui);
-                    else
-                        bts_process_keys(KC_LGUI, record->event.pressed, dev_info.devs, keymap_config.no_gui);
-                }
-                retval = bts_process_keys(QK_MODS_GET_BASIC_KEYCODE(keycode), record->event.pressed, dev_info.devs, keymap_config.no_gui);
-            } else {
-                retval = bts_process_keys(keycode, record->event.pressed, dev_info.devs, keymap_config.no_gui);
-            }
+            retval = bts_process_keys(keycode, record->event.pressed, dev_info.devs, keymap_config.no_gui, KEY_NUM);
         }
     }
 
@@ -515,14 +716,18 @@ static void long_pressed_keys_cb(uint16_t keycode) {
             if (dev_info.sleep_mode_enabled) {
                 dev_info.sleep_mode_enabled = false;
                 bts_send_vendor(v_en_sleep_bt);
+                wait_ms(50);
                 bts_send_vendor(v_en_sleep_wl);
+                wait_ms(50);
                 all_blink_cnt   = 6;
                 all_blink_color = (RGB){100, 100, 100};
                 all_blink_time  = timer_read32();
             } else {
                 dev_info.sleep_mode_enabled = true;
                 bts_send_vendor(v_dis_sleep_bt);
+                wait_ms(50);
                 bts_send_vendor(v_dis_sleep_wl);
+                wait_ms(50);
                 all_blink_cnt   = 6;
                 all_blink_color = (RGB){0, 100, 0};
                 all_blink_time  = timer_read32();
@@ -827,6 +1032,7 @@ static void handle_low_battery_warning(void) {
     static uint32_t Low_power_time = 0;
 
     if (bts_info.bt_info.low_vol) {
+        // if (bts_info.bt_info.pvol <= LOW_POWER_THRESHOLD) {
         rgb_matrix_set_color_all(0, 0, 0);
         if (timer_elapsed32(Low_power_time) >= 500) {
             Low_power_bink = !Low_power_bink;
@@ -860,7 +1066,7 @@ static void handle_charging_indication(void) {
         } else {
             // 充满
             if (timer_elapsed32(full_time) >= 2000) {
-                rgb_matrix_set_color(0, 0, 100, 0); //
+                rgb_matrix_set_color(0, 0, 100, 0); // 绿灯
                 charging_time = timer_read32();
             }
         }
@@ -870,26 +1076,66 @@ static void handle_charging_indication(void) {
 static void handle_low_battery_shutdow(void) {
     extern bool low_vol_offed_sleep;
     if (bts_info.bt_info.low_vol_offed) {
+        // if (bts_info.bt_info.low_vol) {
         kb_sleep_flag       = true;
         low_vol_offed_sleep = true;
     }
 }
 
-static void handle_battery_query_display(void) {
-    static uint32_t query_vol_time = 0;
+// ===========================================
+// 电量查询显示函数
+// ===========================================
+static battery_charge_state_t get_battery_charge_state(void) {
+#if defined(BT_CABLE_PIN) && defined(BT_CHARGE_PIN)
+    static battery_charge_state_t stable_state = BATTERY_STATE_UNPLUGGED;
 
-    // 定期查询电量
-    if (!kb_sleep_flag && bts_info.bt_info.paired && timer_elapsed32(query_vol_time) >= 10000) {
-        query_vol_time = timer_read32();
-        bts_send_vendor(v_query_vol);
+    if (readPin(BT_CABLE_PIN)) {
+        stable_state = BATTERY_STATE_UNPLUGGED;
+    } else {
+        if (!readPin(BT_CHARGE_PIN)) {
+            stable_state = BATTERY_STATE_CHARGING;
+        } else {
+            stable_state = BATTERY_STATE_CHARGED_FULL;
+        }
     }
 
-    uint8_t pvol = bts_info.bt_info.pvol;
-    // 计算LED数量（至少2个，最多10个）
-    uint8_t led_count = (pvol < 20) ? 2 : ((pvol / 10) > 10 ? 10 : (pvol / 10));
+    return stable_state;
+#else
+    return BATTERY_STATE_UNPLUGGED;
+#endif
+}
 
+static void handle_battery_query(void) {
+    // 定期查询电量
+    static uint32_t query_vol_time = 0;
+
+    // Check if we should query battery (avoid querying too frequently)
+    if (!kb_sleep_flag && timer_elapsed32(query_vol_time) > 10000) {
+        query_vol_time = timer_read32();
+
+        // Send appropriate query command based on charge state
+        switch (get_battery_charge_state()) {
+            case BATTERY_STATE_CHARGING:
+                bts_send_vendor(v_query_vol_chrg);
+                break;
+
+            case BATTERY_STATE_CHARGED_FULL:
+                bts_send_vendor(v_query_vol_full);
+                break;
+
+            case BATTERY_STATE_UNPLUGGED:
+            default:
+                bts_send_vendor(v_query_vol);
+                break;
+        }
+    }
+}
+
+static void handle_battery_query_display(void) {
     if (query_vol_flag) {
-        query_vol_processing = true;
+        uint8_t pvol = bts_info.bt_info.pvol;
+        // 计算LED数量（至少2个，最多10个）
+        uint8_t led_count = (pvol < 20) ? 2 : ((pvol / 10) > 10 ? 10 : (pvol / 10));
 
         // 清空显示区域
         rgb_matrix_set_color_all(0, 0, 0);
@@ -905,10 +1151,6 @@ static void handle_battery_query_display(void) {
         // 点亮LED
         for (uint8_t i = 0; i < led_count; i++) {
             rgb_matrix_set_color(query_index[i], color.r, color.g, color.b);
-        }
-    } else {
-        if (query_vol_processing) {
-            query_vol_processing = false;
         }
     }
 }
@@ -930,16 +1172,19 @@ bool bt_indicator_rgb(uint8_t led_min, uint8_t led_max) {
         handle_usb_indicate_led();
     }
 
+    handle_battery_query();
+    handle_battery_query_display();
     // 充电状态指示
     handle_charging_indication();
 
 #if defined(CABLE_PLUG_PIN)
-    bool is_charging = !readPin(CABLE_PLUG_PIN);
+    bool no_cable_plugin = readPin(CABLE_PLUG_PIN);
+#else
+    bool no_cable_plugin = true; // 如果没有定义CABLE_PLUG_PIN，则默认没有充电线连接
 #endif
-    if (!is_charging) {
+    if (no_cable_plugin) {
         // 非充电状态下的其他指示
         if (dev_info.devs != DEVS_USB) {
-            handle_battery_query_display();
             handle_low_battery_warning();
             handle_low_battery_shutdow();
         }
@@ -982,6 +1227,12 @@ static void reset_bt_connection_state(void) {
     bts_info.bt_info.mode_switched  = false;
     bts_info.bt_info.indictor_rgb_s = 0;
 }
+
+// static void send_device_name_command(uint8_t device) {
+//     if (device > DEVS_USB && device < DEVS_2_4G) {
+//         send_device_name_command(device);
+//     }
+// }
 
 static void send_device_vendor_command(uint8_t device) {
     static const uint8_t vendor_cmds[] = {v_host1, v_host2, v_host3, v_2_4g};

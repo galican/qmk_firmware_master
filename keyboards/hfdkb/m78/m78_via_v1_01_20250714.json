@@ -63,15 +63,16 @@
     ],
     "matrix": { "rows": 6, "cols": 16 },
     "customKeycodes":[
-        {"name":"BT_HOST1","title":"BT_HOST1","shortName":"BT_HOST1"},
-        {"name":"BT_HOST2","title":"BT_HOST2","shortName":"BT_HOST2"},
-        {"name":"BT_HOST3","title":"BT_HOST3","shortName":"BT_HOST3"},
-        {"name":"BT_2_4G","title":"BT_2_4G","shortName":"BT_2_4G"},
-        {"name":"BT_USB","title":"BT_USB","shortName":"BT_USB"},
-        {"name":"BT_VOL","title":"Query the voltage of battery","shortName":"BT_VOL"},
-        {"name":"SW_OS","title":"Switch os between window and ios","shortName":"SW_OS"},
-        {"name":"SLEEP_TOGGLE","title":"Toggle the sleep status","shortName":"SW_SELP"},
-        {"name":"BLED_MODE_NEXT","title":"Switch the effect of back light","shortName":"BL_NEXT"}
+        {"name":"BT_ HOST1","title":"BT_HOST1","shortName":"BT_1"},
+        {"name":"BT_ HOST2","title":"BT_HOST2","shortName":"BT_2"},
+        {"name":"BT_ HOST3","title":"BT_HOST3","shortName":"BT_3"},
+        {"name":"2.4G","title":"BT_2_4G","shortName":"2.4G"},
+        {"name":"USB","title":"BT_USB","shortName":"USB"},
+        {"name":"Batt. Check","title":"Query the voltage of battery","shortName":"Batt.Check"},
+        {"name":"OS_ Switch ","title":"Switch os between window and ios","shortName":"OS_SW"},
+        {"name":"SLEEP_ TOGGLE","title":"Toggle the sleep status","shortName":"SLP_TOG"},
+        {"name":"BLED_ MODE_ NEXT","title":"Switch the effect of back light","shortName":"BL_NEXT"},
+        {"name":"VIA","title":"Recall via directly in windows","shortName":"VIA"}
     ],
     "layouts": {
       "keymap":[

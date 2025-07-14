@@ -56,43 +56,22 @@ void bled_task(void) {
         }
 
         case BLED_MODE_BREATHING: {
-            static uint8_t  breath_step       = 0;
-            static uint32_t last_breath_timer = 0;
+            static uint8_t rainbow_hue = 0;
+            static uint8_t brightness  = 0;
+            static uint8_t base_hue    = 0;
 
-            // 控制呼吸速度 - 更平滑的步进 (周期约4秒)
-            if (timer_elapsed32(last_breath_timer) > 15) { // 15ms 一步，更平滑
-                last_breath_timer = timer_read32();
-                breath_step++;
-            }
-
-            // 优化亮度曲线 - 使用更自然的呼吸效果
-            // uint8_t raw_brightness = sin8(breath_step);
-
-            // 方案1：使用三角波函数，更平滑的过渡
-            uint8_t brightness = scale8(triwave8(breath_step), 200) + 1; // 55-255范围
-
-            // 方案2：或者使用双重缓动，更自然
-            // uint8_t brightness = scale8(ease8InOutCubic(sin8(breath_step)), 180) + 75;
-
-            // 方案3：或者自定义分段函数，完全模拟真实呼吸
-            // uint8_t brightness;
-            // if (raw_brightness < 128) {
-            //     // 吸气阶段：慢启动
-            //     brightness = scale8(ease8InQuad(raw_brightness * 2), 200) + 55;
-            // } else {
-            //     // 呼气阶段：快结束
-            //     brightness = scale8(ease8OutQuad((255 - raw_brightness) * 2), 200) + 55;
-            // }
-            // uint16_t time       = scale16by8(g_rgb_timer, breath_step / 8);
-            // uint8_t  brightness = scale8(abs8(sin8(time) - 128) * 2, 200);
+            uint8_t time = scale16by8(g_rgb_timer, qadd8(64 / 4, 1));
+            brightness   = scale8(abs8(sin8(time) - 128) * 2, 200);
 
             // 彩虹呼吸 or 固定色呼吸
-            uint8_t base_hue = 0;
             if (dev_info.bled_color == COLOR_RAINBOW) {
-                static uint8_t rainbow_hue = 0;
-                // 彩虹变色更慢，避免与呼吸抢夺注意力
-                if (breath_step % 16 == 0) rainbow_hue++; // 更慢的变色
-                base_hue = rainbow_hue;
+                // 检测亮度到达最低点（接近0），切换颜色
+                static uint8_t last_brightness = 255;
+                if (last_brightness > 5 && brightness <= 5) {
+                    rainbow_hue += 16; // 每次呼吸循环变化颜色
+                }
+                last_brightness = brightness;
+                base_hue        = rainbow_hue;
             } else {
                 base_hue = color_table[dev_info.bled_color].h;
             }

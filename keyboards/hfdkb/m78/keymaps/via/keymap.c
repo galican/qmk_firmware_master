@@ -62,7 +62,7 @@ enum __layers {
         KC_LCTL, KC_LWIN,  KC_LALT,                               KC_SPC,                             KC_RALT, MO(WIN_FN), KC_RCTL, KC_LEFT,  KC_DOWN, KC_RGHT),
 
     [WIN_FN] = LAYOUT_82_ansi( /* FN */
-        _______, KC_BRID,  KC_BRIU,  KC_FLEX,  KC_DESK,  KC_WBAK, KC_WSCH, KC_MPRV, KC_MPLY, KC_MNXT, KC_MUTE, KC_VOLD,    KC_VOLU, _______, _______,
+        _______, KC_BRID,  KC_BRIU,  KC_FLEX,  KC_DESK,  KC_WBAK, KC_WSCH, KC_MPRV, KC_MPLY, KC_MNXT, KC_MUTE, KC_VOLD,    KC_VOLU, KEY_VIA, _______,
         _______, BT_HOST1, BT_HOST2, BT_HOST3, BT_2_4G,  _______, _______, _______, _______, _______, _______, _______,    _______, _______,
         RGB_TOG, RGB_MOD,  RGB_VAI,  RGB_HUI,  RGB_SAI,  RGB_SPI, _______, _______, _______, _______, _______, _______,    _______, BL_NEXT, _______, _______,
         _______, RGB_RMOD, RGB_VAD,  RGB_HUD,  RGB_SAD,  RGB_SPD, _______, _______, _______, _______, _______, _______,             _______, _______, _______,
@@ -87,7 +87,7 @@ enum __layers {
 
  };
 
- #if defined(ENCODER_MAP_ENABLE)
+#if defined(ENCODER_MAP_ENABLE)
 const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
     [WIN_B]  = {ENCODER_CCW_CW(KC_VOLD, KC_VOLU) },
     [WIN_FN] = {ENCODER_CCW_CW(_______, _______) },
@@ -143,40 +143,37 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 bled_mode_next();
             }
         } break;
+        case KEY_VIA: {
+            if (record->event.pressed) {
+                tap_code16_delay(G(KC_R), 50);
+                send_string_with_delay("https://usevia.app", 10);
+                tap_code(KC_ENTER);
+            }
+        } break;
         default:
             break;
     }
     return true;
 }
 
-static void factory_reset(void) {
+static void execute_factory_reset(void) {
     // 开始复位动画
     factory_reset_count = 1;
     timer_300ms_buffer  = timer_read32();
 
     // 保存当前默认层
-    layer_state_t default_layer = default_layer_state;
+    // layer_state_t default_layer = default_layer_state;
 
     // 执行复位
     eeconfig_init();
-    default_layer_set(default_layer);
+    set_single_persistent_default_layer(WIN_B);
 
     // 重置键盘配置
     keymap_config.no_gui = 0;
     eeconfig_update_keymap(&keymap_config);
 
-    // 清除蓝牙配对
-    // bts_send_vendor(v_clear);
-    // bts_info.bt_info.pairing = false;
-
     dev_info.bled_mode = 0;
     eeconfig_update_user(dev_info.raw);
-
-    // 重置状态指示器
-    extern uint32_t          last_total_time;
-    extern indicator_state_t indicator_status;
-    last_total_time  = timer_read32();
-    indicator_status = INDICATOR_CONNECTING;
 
 #ifdef RGB_MATRIX_ENABLE
     // 重新初始化 RGB
@@ -185,6 +182,17 @@ static void factory_reset(void) {
     }
     rgb_matrix_init();
 #endif
+
+    // 清除蓝牙配对
+    if (dev_info.devs > DEVS_USB && dev_info.devs < DEVS_2_4G) {
+        bts_send_vendor(v_clear);
+        wait_ms(1000);
+        // 重置状态指示器
+        extern uint32_t          last_total_time;
+        extern indicator_state_t indicator_status;
+        last_total_time  = timer_read32();
+        indicator_status = INDICATOR_CONNECTING;
+    }
 }
 
 bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
@@ -222,7 +230,7 @@ void matrix_scan_user(void) {
     if (timer_3s_buffer && timer_elapsed32(timer_3s_buffer) > 3000) {
         timer_3s_buffer = 0;
         if (key_press_status == KEY_PRESS_FACTORY_RESET) {
-            factory_reset();
+            execute_factory_reset();
         }
         key_press_status = 0; // 超时后清除状态
     }

@@ -20,7 +20,10 @@ enum bt_keycodes {
 
     // LED control
     BLED_MODE_NEXT, // Backlight mode next
-    RGB_TEST,       // RGB test mode
+    // Other keys
+    KEY_VIA,
+    // RGB test mode
+    RGB_TEST,
 
     // macOS specific keys
     MAC_Spotlight,
