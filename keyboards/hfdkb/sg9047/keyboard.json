@@ -52,7 +52,6 @@
     "rgb_matrix": {
         "animations": {
             "solid_color": true,
-            "breathing": true,
             "gradient_up_down": true,
             "band_pinwheel_sat": true,
             "band_spiral_sat": true,

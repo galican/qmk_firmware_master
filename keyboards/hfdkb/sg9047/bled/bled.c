@@ -125,6 +125,10 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         case PDF(0):
         case PDF(2):
             if (record->event.pressed) {
+                if (get_highest_layer(default_layer_state) == 0) {
+                    keymap_config.no_gui = false;
+                    eeconfig_update_keymap(&keymap_config);
+                }
                 all_blink_cnt   = 6;
                 all_blink_time  = timer_read32();
                 all_blink_color = (RGB){RGB_WHITE}; // White color
@@ -189,6 +193,24 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 }
 
 bool rgb_matrix_indicators_user(void) {
+    // caps lock red
+    if (host_keyboard_led_state().caps_lock) {
+        rgb_matrix_set_color(CAPS_LOCK_LED_INDEX, RGB_WHITE);
+    } else {
+        if (!rgb_matrix_get_flags()) {
+            rgb_matrix_set_color(CAPS_LOCK_LED_INDEX, RGB_OFF);
+        }
+    }
+
+    // GUI lock white
+    if (keymap_config.no_gui) {
+        rgb_matrix_set_color(GUI_LOCK_LED_INDEX, RGB_WHITE);
+    } else {
+        if (!rgb_matrix_get_flags()) {
+            rgb_matrix_set_color(GUI_LOCK_LED_INDEX, RGB_OFF);
+        }
+    }
+
     // 全键闪烁
     if (all_blink_cnt) {
         // Turn off all LEDs before blinking
@@ -284,7 +306,7 @@ void bled_task(void) {
         case BLED_MODE_BREATHING: {
             if (bled_info.bled_color == COLOR_RAINBOW) {
                 // Rainbow breathing effect
-                uint8_t time       = scale16by8(g_rgb_timer, qadd8(rgb_matrix_config.speed / 4, 1));
+                uint8_t time       = scale16by8(g_rgb_timer, qadd8(bled_info.bled_speed / 4, 1));
                 uint8_t brightness = scale8(abs8(sin8(time / 2) - 128) * 2, bled_info.bled_Brightness);
                 // uint16_t time = scale16by8(g_rgb_timer, bled_info.bled_speed / 8);
                 // uint8_t brightness = scale8(abs8(sin8(time) - 128) * 2, bled_info.bled_Brightness);
@@ -297,7 +319,7 @@ void bled_task(void) {
                 HSV hsv;
                 hsv.h              = color_table[bled_info.bled_color][0];
                 hsv.s              = color_table[bled_info.bled_color][1];
-                uint8_t time       = scale16by8(g_rgb_timer, qadd8(rgb_matrix_config.speed / 4, 1));
+                uint8_t time       = scale16by8(g_rgb_timer, qadd8(bled_info.bled_speed / 4, 1));
                 uint8_t brightness = scale8(abs8(sin8(time / 2) - 128) * 2, bled_info.bled_Brightness);
                 // uint16_t time = scale16by8(g_rgb_timer, bled_info.bled_speed / 8);
                 // uint8_t brightness = scale8(abs8(sin8(time) - 128) * 2, bled_info.bled_Brightness);

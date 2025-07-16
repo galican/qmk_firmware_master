@@ -49,23 +49,23 @@ bool rgb_matrix_indicators_kb(void) {
         return false;
     }
 
-    // caps lock red
-    if (host_keyboard_led_state().caps_lock) {
-        rgb_matrix_set_color(CAPS_LOCK_LED_INDEX, RGB_WHITE);
-    } else {
-        if (!rgb_matrix_get_flags()) {
-            rgb_matrix_set_color(CAPS_LOCK_LED_INDEX, RGB_OFF);
-        }
-    }
+    // // caps lock red
+    // if (host_keyboard_led_state().caps_lock) {
+    //     rgb_matrix_set_color(CAPS_LOCK_LED_INDEX, RGB_WHITE);
+    // } else {
+    //     if (!rgb_matrix_get_flags()) {
+    //         rgb_matrix_set_color(CAPS_LOCK_LED_INDEX, RGB_OFF);
+    //     }
+    // }
 
-    // GUI lock white
-    if (keymap_config.no_gui) {
-        rgb_matrix_set_color(GUI_LOCK_LED_INDEX, RGB_WHITE);
-    } else {
-        if (!rgb_matrix_get_flags()) {
-            rgb_matrix_set_color(GUI_LOCK_LED_INDEX, RGB_OFF);
-        }
-    }
+    // // GUI lock white
+    // if (keymap_config.no_gui) {
+    //     rgb_matrix_set_color(GUI_LOCK_LED_INDEX, RGB_WHITE);
+    // } else {
+    //     if (!rgb_matrix_get_flags()) {
+    //         rgb_matrix_set_color(GUI_LOCK_LED_INDEX, RGB_OFF);
+    //     }
+    // }
 
     return true;
 }
