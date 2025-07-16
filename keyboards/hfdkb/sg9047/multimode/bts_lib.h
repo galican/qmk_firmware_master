@@ -26,14 +26,14 @@ typedef enum {
     DEVS_HOST1,
     DEVS_HOST2,
     DEVS_HOST3,
-    DEVS_2_4G,
     DEVS_HOST4,
     DEVS_HOST5,
+    DEVS_2G4,
 } devs_t;
 
 typedef enum {
     v_usb            = 0x11, // USB模式
-    v_2_4g           = 0x30, // 2.4G模式
+    v_2g4            = 0x30, // 2.4G模式
     v_host1          = 0x31, // 蓝牙1
     v_host2          = 0x32, // 蓝牙2
     v_host3          = 0x33, // 蓝牙3
@@ -62,6 +62,7 @@ typedef struct {
     bool    come_back;      // 进入回连状态
     bool    come_back_err;  // 回连失败
     bool    mode_switched;  // 模式已切换
+    bool    active;         // 键盘处于活动状态
     uint8_t pvol;           // 电压百分比
     uint8_t indictor_rgb_s; // rgb指示灯状态
 } bt_info_t;
