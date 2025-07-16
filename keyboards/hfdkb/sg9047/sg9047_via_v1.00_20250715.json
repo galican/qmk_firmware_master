@@ -60,7 +60,7 @@
         ]
       }
     ],
-    "matrix": { "rows": 6, "cols": 16 },
+    "matrix": { "rows": 6, "cols": 15 },
     "customKeycodes":[
         {"name": "BL_NEXT","title": "Cycle switching the backlight mode", "shortName":"BL_NEXT"},
         {"name": "BL_VAL","title": "Cycle adjusting the backlight brightness", "shortName":"BL_VAL"},
