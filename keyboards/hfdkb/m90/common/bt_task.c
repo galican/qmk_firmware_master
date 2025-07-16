@@ -44,6 +44,7 @@ static void handle_layer_indication(void);
 static void handle_charging_indication(void);
 static void handle_low_battery_warning(void);
 static void handle_low_battery_shutdow(void);
+static void handle_battery_query(void);
 static void handle_battery_query_display(void);
 static void handle_bt_indicate_led(void);
 static void handle_usb_indicate_led(void);
@@ -99,6 +100,14 @@ typedef struct {
 } long_pressed_keys_t;
 
 per_info_t per_info = {.raw = 0};
+
+typedef enum {
+    BATTERY_STATE_UNPLUGGED = 0, // No cable connected
+    BATTERY_STATE_CHARGING,      // Cable connected, charging
+    BATTERY_STATE_CHARGED_FULL   // Cable connected, fully charged
+} battery_charge_state_t;
+
+static battery_charge_state_t get_battery_charge_state(void);
 
 // ===========================================
 // 全局变量
@@ -159,9 +168,9 @@ static const uint8_t rgb_index_color_table[][3] = {
 };
 
 static const uint8_t rgb_test_color_table[][3] = {
-    {100, 0, 0},
-    {0, 100, 0},
-    {0, 0, 100},
+    {200, 0, 0},
+    {0, 200, 0},
+    {0, 0, 200},
     {100, 100, 100},
 };
 static uint8_t  rgb_test_index = 0;
@@ -426,11 +435,6 @@ void bt_task(void) {
                 eeconfig_update_user(dev_info.raw);
                 break;
         }
-
-        bts_send_vendor(v_en_sleep_bt);
-        wait_ms(10);
-        bts_send_vendor(v_en_sleep_wl);
-        wait_ms(10);
     }
 
     if (timer_elapsed32(last_time) >= 1) {
@@ -650,7 +654,21 @@ static bool process_record_other(uint16_t keycode, keyrecord_t *record) {
 
         case BT_VOL: {
             if (record->event.pressed) {
-                bts_send_vendor(v_query_vol);
+                // bts_send_vendor(v_query_vol);
+                switch (get_battery_charge_state()) {
+                    case BATTERY_STATE_CHARGING:
+                        bts_send_vendor(v_query_vol_chrg);
+                        break;
+
+                    case BATTERY_STATE_CHARGED_FULL:
+                        bts_send_vendor(v_query_vol_full);
+                        break;
+
+                    case BATTERY_STATE_UNPLUGGED:
+                    default:
+                        bts_send_vendor(v_query_vol);
+                        break;
+                }
                 query_vol_flag = true;
             } else {
                 query_vol_flag = false;
@@ -1163,7 +1181,7 @@ static void handle_factory_reset_display(void) {
                     eeconfig_update_kb(per_info.raw);
                     keymap_config.nkro   = false;
                     keymap_config.no_gui = 0;
-                    eeconfig_update_keymap(&keymap_config);
+                    // eeconfig_update_keymap(&keymap_config);
                     {
                         rgb_matrix_config.hsv.h = 170;
                         rgb_matrix_config.mode  = RGB_MATRIX_CUSTOM_EFFECT_OFF;
@@ -1181,7 +1199,7 @@ static void handle_factory_reset_display(void) {
                     eeconfig_init();
                     keymap_config.no_gui = 0;
                     keymap_config.nkro   = false;
-                    eeconfig_update_keymap(&keymap_config);
+                    // eeconfig_update_keymap(&keymap_config);
                     {
                         rgb_matrix_config.hsv.h = 170;
                         rgb_matrix_config.mode  = RGB_MATRIX_CUSTOM_EFFECT_OFF;
@@ -1364,12 +1382,6 @@ static void handle_low_battery_shutdow(void) {
         low_vol_offed_sleep = true;
     }
 }
-
-typedef enum {
-    BATTERY_STATE_UNPLUGGED = 0, // No cable connected
-    BATTERY_STATE_CHARGING,      // Cable connected, charging
-    BATTERY_STATE_CHARGED_FULL   // Cable connected, fully charged
-} battery_charge_state_t;
 
 static battery_charge_state_t get_battery_charge_state(void) {
 #if defined(BT_CABLE_PIN) && defined(BT_CHARGE_PIN)

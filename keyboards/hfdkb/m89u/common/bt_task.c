@@ -8,10 +8,10 @@
  * @copyright Copyright (c) 2023 Westberry Technology Corp., Ltd
  */
 
+#include QMK_KEYBOARD_H
 #include "common/bts_lib.h"
 #include "config.h"
 #include "gpio.h"
-#include "m89u.h"
 #include "quantum.h"
 #include "rgb_matrix.h"
 #include "uart.h"
@@ -43,6 +43,7 @@ static void handle_layer_indication(void);
 static void handle_charging_indication(void);
 static void handle_low_battery_warning(void);
 static void handle_low_battery_shutdow(void);
+static void handle_battery_query(void);
 static void handle_battery_query_display(void);
 static void handle_bt_indicate_led(void);
 static void handle_usb_indicate_led(void);
@@ -50,8 +51,6 @@ static bool is_switch_forcing_wired_mode(void);
 static bool is_wireless_mode_keycode(uint16_t keycode);
 static bool is_current_mode_wireless(void);
 static bool is_current_mode_wireless_by_devs(uint8_t devs);
-static void handle_battery_query(void);
-static void handle_battery_query_display(void);
 #ifdef RGB_MATRIX_ENABLE
 // static void led_off_standby(void);
 static void open_rgb(void);
@@ -1169,7 +1168,7 @@ static void execute_factory_reset(void) {
             per_info.eco_tog_flag    = false;
             eeconfig_update_kb(per_info.raw);
             keymap_config.nkro = false;
-            eeconfig_update_keymap(&keymap_config);
+            // eeconfig_update_keymap(&keymap_config);
             {
                 rgb_matrix_config.hsv.h = 170;
                 rgb_matrix_config.mode  = RGB_MATRIX_CUSTOM_EFFECT_OFF;
@@ -1186,7 +1185,7 @@ static void execute_factory_reset(void) {
         case 2: // Keyboard reset
             eeconfig_init();
             keymap_config.nkro = false;
-            eeconfig_update_keymap(&keymap_config);
+            // eeconfig_update_keymap(&keymap_config);
             {
                 rgb_matrix_config.hsv.h = 170;
                 rgb_matrix_config.mode  = RGB_MATRIX_CUSTOM_EFFECT_OFF;

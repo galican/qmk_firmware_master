@@ -49,11 +49,10 @@ static void close_rgb(void);
 #endif
 
 // Helper functions for better code organization
-static bool is_bt_device(uint8_t device);
-static bool validate_device_type(uint8_t device);
-static void reset_bt_connection_state(void);
-static void send_device_vendor_command(uint8_t device);
-// static void    send_device_name_command(uint8_t device);
+static bool    is_bt_device(uint8_t device);
+static bool    validate_device_type(uint8_t device);
+static void    reset_bt_connection_state(void);
+static void    send_device_vendor_command(uint8_t device);
 static uint8_t keycode_to_device_type(uint16_t keycode);
 
 extern keymap_config_t keymap_config;
@@ -459,9 +458,8 @@ void bt_task(void) {
         // bts_send_vendor(v_en_sleep_bt);
         // bts_send_vendor(v_en_sleep_wl);
 
-        // send_device_name_command(dev_info.devs);
-        send_device_vendor_command(dev_info.devs);
         // Send appropriate vendor command for current device
+        send_device_vendor_command(dev_info.devs);
 
         // Fallback to USB if invalid device
         if (!validate_device_type(dev_info.devs)) {
@@ -1227,12 +1225,6 @@ static void reset_bt_connection_state(void) {
     bts_info.bt_info.mode_switched  = false;
     bts_info.bt_info.indictor_rgb_s = 0;
 }
-
-// static void send_device_name_command(uint8_t device) {
-//     if (device > DEVS_USB && device < DEVS_2_4G) {
-//         send_device_name_command(device);
-//     }
-// }
 
 static void send_device_vendor_command(uint8_t device) {
     static const uint8_t vendor_cmds[] = {v_host1, v_host2, v_host3, v_2_4g};

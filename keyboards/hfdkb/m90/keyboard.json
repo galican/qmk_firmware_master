@@ -2,13 +2,13 @@
     "manufacturer": " ",
     "keyboard_name": "Alchemie TKL",
     "maintainer": "jonylee@hfd",
-    "url": " ",
+    "url": "https://github.com/jonylee1986",
     "processor": "WB32FQ95",
     "bootloader": "wb32-dfu",
     "usb": {
         "vid": "0xFFFE",
         "pid": "0x00AC",
-        "device_version": "1.0.7",
+        "device_version": "1.0.8",
         "suspend_wakeup_delay": 1000
     },
     "diode_direction": "ROW2COL",

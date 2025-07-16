@@ -2,7 +2,7 @@
     "manufacturer": " ",
     "keyboard_name": "FC220TP",
     "maintainer": "jonylee@hfd",
-    "url": "",
+    "url": "https://github.com/jonylee1986",
     "processor": "WB32FQ95",
     "bootloader": "wb32-dfu",
     "usb": {

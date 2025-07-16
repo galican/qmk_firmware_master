@@ -265,9 +265,9 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 switch (per_info.sleep_mode) {
                     case 0: // 关闭睡眠
                         bts_send_vendor(v_dis_sleep_bt);
-                        wait_ms(10);
+                        wait_ms(50);
                         bts_send_vendor(v_dis_sleep_wl);
-                        wait_ms(10);
+                        wait_ms(50);
                         VAL_OUT_blink_cnt   = 8;
                         VAL_OUT_LEDINDEX    = 68;
                         VAL_OUT_blink_color = (RGB){0, 0, 100};
@@ -275,9 +275,9 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                         break;
                     case 1: // 开启睡眠1
                         bts_send_vendor(v_en_sleep_bt);
-                        wait_ms(10);
+                        wait_ms(50);
                         bts_send_vendor(v_en_sleep_wl);
-                        wait_ms(10);
+                        wait_ms(50);
                         VAL_OUT_blink_cnt   = 2;
                         VAL_OUT_LEDINDEX    = 68;
                         VAL_OUT_blink_color = (RGB){0, 0, 100};
@@ -285,9 +285,9 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                         break;
                     case 2: // 开启睡眠2
                         bts_send_vendor(v_en_sleep_bt);
-                        wait_ms(10);
+                        wait_ms(50);
                         bts_send_vendor(v_en_sleep_wl);
-                        wait_ms(10);
+                        wait_ms(50);
                         VAL_OUT_blink_cnt   = 4;
                         VAL_OUT_LEDINDEX    = 68;
                         VAL_OUT_blink_color = (RGB){0, 0, 100};
@@ -295,9 +295,9 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                         break;
                     case 3: // 开启睡眠3
                         bts_send_vendor(v_en_sleep_bt);
-                        wait_ms(10);
+                        wait_ms(50);
                         bts_send_vendor(v_en_sleep_wl);
-                        wait_ms(10);
+                        wait_ms(50);
                         VAL_OUT_blink_cnt   = 6;
                         VAL_OUT_LEDINDEX    = 68;
                         VAL_OUT_blink_color = (RGB){0, 0, 100};

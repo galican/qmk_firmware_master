@@ -100,6 +100,14 @@ typedef struct {
 
 per_info_t per_info = {.raw = 0};
 
+typedef enum {
+    BATTERY_STATE_UNPLUGGED = 0, // No cable connected
+    BATTERY_STATE_CHARGING,      // Cable connected, charging
+    BATTERY_STATE_CHARGED_FULL   // Cable connected, fully charged
+} battery_charge_state_t;
+
+static battery_charge_state_t get_battery_charge_state(void);
+
 // ===========================================
 // 全局变量
 // ===========================================
@@ -425,11 +433,6 @@ void bt_task(void) {
                 eeconfig_update_user(dev_info.raw);
                 break;
         }
-
-        bts_send_vendor(v_en_sleep_bt);
-        wait_ms(10);
-        bts_send_vendor(v_en_sleep_wl);
-        wait_ms(10);
     }
 
     if (timer_elapsed32(last_time) >= 1) {
@@ -649,7 +652,21 @@ static bool process_record_other(uint16_t keycode, keyrecord_t *record) {
 
         case BT_VOL: {
             if (record->event.pressed) {
-                bts_send_vendor(v_query_vol);
+                // bts_send_vendor(v_query_vol);
+                switch (get_battery_charge_state()) {
+                    case BATTERY_STATE_CHARGING:
+                        bts_send_vendor(v_query_vol_chrg);
+                        break;
+
+                    case BATTERY_STATE_CHARGED_FULL:
+                        bts_send_vendor(v_query_vol_full);
+                        break;
+
+                    case BATTERY_STATE_UNPLUGGED:
+                    default:
+                        bts_send_vendor(v_query_vol);
+                        break;
+                }
                 query_vol_flag = true;
             } else {
                 query_vol_flag = false;
@@ -1355,12 +1372,6 @@ static void handle_low_battery_shutdow(void) {
         low_vol_offed_sleep = true;
     }
 }
-
-typedef enum {
-    BATTERY_STATE_UNPLUGGED = 0, // No cable connected
-    BATTERY_STATE_CHARGING,      // Cable connected, charging
-    BATTERY_STATE_CHARGED_FULL   // Cable connected, fully charged
-} battery_charge_state_t;
 
 static battery_charge_state_t get_battery_charge_state(void) {
 #if defined(BT_CABLE_PIN) && defined(BT_CHARGE_PIN)
