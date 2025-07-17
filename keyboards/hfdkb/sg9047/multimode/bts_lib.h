@@ -26,9 +26,9 @@ typedef enum {
     DEVS_HOST1,
     DEVS_HOST2,
     DEVS_HOST3,
+    DEVS_2G4,
     DEVS_HOST4,
     DEVS_HOST5,
-    DEVS_2G4,
 } devs_t;
 
 typedef enum {
@@ -62,7 +62,6 @@ typedef struct {
     bool    come_back;      // 进入回连状态
     bool    come_back_err;  // 回连失败
     bool    mode_switched;  // 模式已切换
-    bool    active;         // 键盘处于活动状态
     uint8_t pvol;           // 电压百分比
     uint8_t indictor_rgb_s; // rgb指示灯状态
 } bt_info_t;

@@ -24,9 +24,6 @@
 
 #    define USB_CONN_BLINK_INTERVAL (500)
 
-#    define MATRIX_LONG_PRESS
-#    define RGB_MATRIX_BLINK_COUNT 6
-
 // Multi mode used pins
 #    define MM_CABLE_PIN B9
 #    define MM_CHARGE_PIN B8
@@ -38,12 +35,14 @@
 #    define MM_USB_EN_STATE 0
 
 // Indicate index of mm device
+#    define MATRIX_LONG_PRESS
 #    define RGB_MATRIX_BLINK_INDEX_HOST1 26
 #    define RGB_MATRIX_BLINK_INDEX_HOST2 25
 #    define RGB_MATRIX_BLINK_INDEX_HOST3 24
 #    define RGB_MATRIX_BLINK_INDEX_2G4 23
 #    define RGB_MATRIX_BLINK_INDEX_USB 22
 #    define RGB_MATRIX_BLINK_INDEX_ALL 0xFF
+#    define RGB_MATRIX_BLINK_COUNT 6
 
 // Indicate color of mm device
 #    define RGB_MATRIX_BLINK_HOST1_COLOR RGB_BLUE   // 蓝牙1指示灯颜色
@@ -51,6 +50,8 @@
 #    define RGB_MATRIX_BLINK_HOST3_COLOR RGB_PURPLE // 蓝牙3指示灯颜色
 #    define RGB_MATRIX_BLINK_2G4_COLOR RGB_GREEN    // 2.4G指示灯颜色
 #    define RGB_MATRIX_BLINK_USB_COLOR RGB_WHITE    // USB指示灯颜色
+
+#    define BATTERY_VOL_DISPLAY_INDEX 26, 25, 24, 23, 22, 21, 20, 19, 18, 17
 #endif
 
 /* SPI Config for spi flash*/
@@ -70,7 +71,7 @@
 #define GUI_LOCK_LED_INDEX 81
 
 // RGB Matrix Config
-#define RGB_MATRIX_SHUTDOWN_PIN D2
+#define RGB_DRIVER_SDB_PIN D2
 
 // Encoder Config
 #define ENCODER_DEFAULT_POS 0x0

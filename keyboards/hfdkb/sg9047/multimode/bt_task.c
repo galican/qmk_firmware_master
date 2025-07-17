@@ -8,14 +8,15 @@
  * @copyright Copyright (c) 2023 Westberry Technology Corp., Ltd
  */
 
+#include "bt_task.h"
+#include "multimode.h"
+
 #ifdef MULTIMODE_ENABLE
-#    include "multimode.h"
+static bool    query_vol_flag = false;
+static uint8_t query_index[]  = {BATTERY_VOL_DISPLAY_INDEX};
 #endif
-// #include "multimode.h"
-// #include "rgb_matrix_blink.h"
 
 #ifdef CLOSE_RGB_ENABLE
-// Global variables for RGB control
 static uint32_t key_press_time;
 static uint32_t close_rgb_time;
 static bool     bak_rgb_toggle;
@@ -57,7 +58,6 @@ void open_rgb(void) {
 #    endif
             kb_sleep_flag = false;
             rgb_matrix_enable_noeeprom();
-            bts_info.bt_info.active = true;
         }
         if (!led_inited) {
             led_config_all();
@@ -78,7 +78,6 @@ void close_rgb(void) {
             sober          = false;
             close_rgb_time = timer_read32();
             rgb_matrix_disable_noeeprom();
-            bts_info.bt_info.active = false;
 #    ifdef RGB_DRIVER_SDB_PIN
             writePinLow(RGB_DRIVER_SDB_PIN);
 #    endif
@@ -106,20 +105,13 @@ void close_rgb(void) {
 #        include "usb_main.h"
 #    endif
 
-enum wl_indicator_status {
-    wls_none = 0,
-    wls_lback,
-    wls_pair,
-    wls_lback_succeed,
-    wls_pair_succeed,
-    wls_lback_timeout,
-    wls_pair_timeout,
-};
-
 uint8_t  wl_rgb_indicator_s = 0;
 uint32_t wl_rgb_timer       = 0;
 
-void wl_indicators_hook(uint8_t index) {
+static void rgb_blink_cb(uint8_t index);
+static void wl_indicators_hook(uint8_t index);
+
+static void wl_indicators_hook(uint8_t index) {
     extern void rgb_blink_cb(uint8_t index);
 
     switch (wl_rgb_indicator_s) {
@@ -235,11 +227,14 @@ void wl_indicators_hook(uint8_t index) {
         case wls_pair_timeout: {
             wl_rgb_indicator_s = wls_none;
             rgb_matrix_blink_set(index);
+#    ifdef CLOSE_RGB_ENABLE
+            kb_sleep_flag = true;
+#    endif
         } break;
     }
 }
 
-void rgb_blink_cb(uint8_t index) {
+static void rgb_blink_cb(uint8_t index) {
     switch (index) {
         case RGB_MATRIX_BLINK_INDEX_HOST1: {
             wl_indicators_hook(RGB_MATRIX_BLINK_INDEX_HOST1);
@@ -297,6 +292,12 @@ blink_rgb_t blink_rgbs[RGB_MATRIX_BLINK_COUNT] = {
     {.index = RGB_MATRIX_BLINK_INDEX_HOST1, .interval = 250, .times = 1, .color = {.r = 0x00, .g = 0xFF, .b = 0x00}, .blink_cb = rgb_blink_cb},
     {.index = RGB_MATRIX_BLINK_INDEX_HOST2, .interval = 250, .times = 1, .color = {.r = 0x00, .g = 0xFF, .b = 0x00}, .blink_cb = rgb_blink_cb},
     {.index = RGB_MATRIX_BLINK_INDEX_HOST3, .interval = 250, .times = 1, .color = {.r = 0x00, .g = 0xFF, .b = 0x00}, .blink_cb = rgb_blink_cb},
+    #    ifdef RGB_MATRIX_BLINK_INDEX_HOST4
+    {.index = RGB_MATRIX_BLINK_INDEX_HOST4, .interval = 250, .times = 1, .color = {.r = 0x00, .g = 0xFF, .b = 0x00}, .blink_cb = rgb_blink_cb},
+    #endif
+    #    ifdef RGB_MATRIX_BLINK_INDEX_HOST5
+    {.index = RGB_MATRIX_BLINK_INDEX_HOST5, .interval = 250, .times = 1, .color = {.r = 0x00, .g = 0xFF, .b = 0x00}, .blink_cb = rgb_blink_cb},
+    #endif
     {.index = RGB_MATRIX_BLINK_INDEX_2G4, .interval = 250, .times = 1, .color = {.r = 0x00, .g = 0xFF, .b = 0x00}, .blink_cb = rgb_blink_cb},
 #    ifdef RGB_MATRIX_BLINK_INDEX_USB
     {.index = RGB_MATRIX_BLINK_INDEX_USB, .interval = 250, .times = 1, .color = {.r = 0x00, .g = 0xFF, .b = 0x00}, .blink_cb = rgb_blink_cb},
@@ -307,6 +308,8 @@ blink_rgb_t blink_rgbs[RGB_MATRIX_BLINK_COUNT] = {
 #endif
 
 #ifdef MATRIX_LONG_PRESS
+static void bt_long_press_keys_cb(uint16_t keycode);
+
 typedef struct {
     uint32_t press_time;
     uint32_t long_time;
@@ -320,27 +323,14 @@ typedef struct {
 static void bt_long_press_keys_cb(uint16_t keycode);
 
 bt_long_key_t bt_long_press_keys[] = {
-    {.keycode = EE_CLR, .press_time = 0, .long_time = 3000, .upinvalid = true, .event_cb = &bt_long_press_keys_cb},
     {.keycode = BT_HOST1, .press_time = 0, .long_time = 3000, .upinvalid = true, .event_cb = &bt_long_press_keys_cb},
     {.keycode = BT_HOST2, .press_time = 0, .long_time = 3000, .upinvalid = true, .event_cb = &bt_long_press_keys_cb},
     {.keycode = BT_HOST3, .press_time = 0, .long_time = 3000, .upinvalid = true, .event_cb = &bt_long_press_keys_cb},
-    // {.keycode = BT_HOST4, .press_time = 0, .long_time = 3000, .upinvalid = true, .event_cb = &bt_long_press_keys_cb},
-    // {.keycode = BT_HOST5, .press_time = 0, .long_time = 3000, .upinvalid = true, .event_cb = &bt_long_press_keys_cb},
     {.keycode = BT_2G4, .press_time = 0, .long_time = 3000, .upinvalid = true, .event_cb = &bt_long_press_keys_cb},
 };
 
 static void bt_long_press_keys_cb(uint16_t keycode) {
     switch (keycode) {
-        case EE_CLR: {
-            eeconfig_init();
-            eeconfig_update_rgb_matrix_default();
-            eeconfig_update_multimode_default();
-            matrix_init_kb();
-#    ifdef RGB_MATRIX_BLINK_ENABLE
-            extern bool rgb_matrix_blink_set(uint8_t index);
-            rgb_matrix_blink_set(RGB_MATRIX_BLINK_INDEX_ALL);
-#    endif
-        } break;
         case BT_HOST1: {
             dprintf("reset to host1\n");
             mm_switch_mode(mm_eeconfig.devs, DEVS_HOST1, true);
@@ -360,7 +350,7 @@ static void bt_long_press_keys_cb(uint16_t keycode) {
             dprintf("reset to 2g4\n");
             mm_switch_mode(mm_eeconfig.devs, DEVS_2G4, true);
             wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_2G4, wls_pair);
-        }
+        } break;
         default:
             break;
     }
@@ -376,8 +366,15 @@ void bt_proc_long_press_keys(void) {
 }
 #endif
 
+#ifdef MULTIMODE_ENABLE
+static void charging_indication(void);
+static void low_battery_warning(void);
+static void low_battery_shutdown(void);
+static void show_device_state(void);
+static void battery_vol_display(void);
+
 bool bt_process_record_user(uint16_t keycode, keyrecord_t *record) {
-#ifdef MATRIX_LONG_PRESS
+#    ifdef MATRIX_LONG_PRESS
     for (uint8_t i = 0; i < NUM_LONG_PRESS_KEYS; i++) {
         if (keycode == bt_long_press_keys[i].keycode) {
             if (record->event.pressed) {
@@ -388,28 +385,27 @@ bool bt_process_record_user(uint16_t keycode, keyrecord_t *record) {
             break;
         }
     }
-#endif
+#    endif
 
-#ifdef CLOSE_RGB_ENABLE
+#    ifdef CLOSE_RGB_ENABLE
     open_rgb();
-#endif
+#    endif
 
-#ifdef MULTIMODE_ENABLE
 #    if defined(MM_BT_MODE_PIN) && defined(MM_2G4_MODE_PIN)
-    switch (mm_mode) {
+    switch (now_mode) {
         case MM_MODE_USB:
             if (keycode >= BT_HOST1 && keycode <= BT_2G4) {
-                break;
+                return false;
             }
             break;
         case MM_MODE_BT:
             if (keycode >= BT_2G4 && keycode <= BT_USB) {
-                break;
+                return false;
             }
             break;
         case MM_MODE_2G4:
             if (keycode >= BT_HOST1 && keycode <= BT_USB) {
-                break;
+                return false;
             }
         default:
             break;
@@ -417,9 +413,6 @@ bool bt_process_record_user(uint16_t keycode, keyrecord_t *record) {
 #    endif
 
     switch (keycode) {
-        case EE_CLR: {
-            return false;
-        } break;
         case BT_HOST1: {
             if (record->event.pressed && (mm_eeconfig.devs != DEVS_HOST1)) {
                 dprintf("switch to host1\n");
@@ -462,8 +455,14 @@ bool bt_process_record_user(uint16_t keycode, keyrecord_t *record) {
             }
         } break;
 
-            /* user code*/
-
+        /* user code*/
+        case BT_VOL: {
+            if (record->event.pressed) {
+                query_vol_flag = true;
+            } else {
+                query_vol_flag = false;
+            }
+        } break;
         default: {
             return true;
         }
@@ -472,18 +471,68 @@ bool bt_process_record_user(uint16_t keycode, keyrecord_t *record) {
     return false;
 }
 
-bool bt_rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
-    // FN按下显示电量信息
-    // if (get_highest_layer(default_layer_state | layer_state) == 1) {
-    //     for (uint8_t i = 0; i < 10; i++) {
-    //         if (i < (bts_info.bt_info.pvol / 10)) {
-    //             rgb_matrix_set_color(1 + i, RGB_WHITE);
-    //         } else {
-    //             rgb_matrix_set_color(1 + i, 0x00, 0x00, 0x00);
-    //         }
-    //     }
-    // }
+static void charging_indication(void) {
+    static uint32_t charging_time = 0;
 
+    if (get_battery_charge_state() == BATTERY_STATE_CHARGING) {
+        // 正在充电
+        if (timer_elapsed32(charging_time) >= 2000) {
+            rgb_matrix_set_color(0, RGB_RED); // 红灯
+        }
+    } else {
+        charging_time = timer_read32();
+    }
+}
+
+static void low_battery_warning(void) {
+    static bool     Low_power_bink = false;
+    static uint32_t Low_power_time = 0;
+
+    if (bts_info.bt_info.low_vol) {
+        rgb_matrix_set_color_all(RGB_OFF);
+        if (timer_elapsed32(Low_power_time) >= 500) {
+            Low_power_bink = !Low_power_bink;
+            Low_power_time = timer_read32();
+        }
+        if (Low_power_bink) {
+            rgb_matrix_set_color(0, RGB_RED); // 红色
+        } else {
+            rgb_matrix_set_color(0, RGB_OFF);
+        }
+    } else {
+        Low_power_bink = 0;
+    }
+}
+
+static void low_battery_shutdown(void) {
+    extern bool low_vol_offed_sleep;
+    if (bts_info.bt_info.low_vol_offed) {
+        kb_sleep_flag       = true;
+        low_vol_offed_sleep = true;
+    }
+}
+
+battery_charge_state_t get_battery_charge_state(void) {
+#    if defined(MM_CABLE_PIN) && defined(MM_CHARGE_PIN)
+    static battery_charge_state_t stable_state = BATTERY_STATE_UNPLUGGED;
+
+    if (readPin(MM_CABLE_PIN)) {
+        stable_state = BATTERY_STATE_UNPLUGGED;
+    } else {
+        if (!readPin(MM_CHARGE_PIN)) {
+            stable_state = BATTERY_STATE_CHARGING;
+        } else {
+            stable_state = BATTERY_STATE_CHARGED_FULL;
+        }
+    }
+
+    return stable_state;
+#    else
+    return BATTERY_STATE_UNPLUGGED;
+#    endif
+}
+
+static void show_device_state(void) {
     // FN 按下时显示当前无线设备状态
     if ((get_highest_layer(default_layer_state | layer_state) == 1) || (get_highest_layer(default_layer_state | layer_state) == 3)) {
         switch (mm_eeconfig.devs) {
@@ -500,13 +549,64 @@ bool bt_rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                 rgb_matrix_set_color(RGB_MATRIX_BLINK_INDEX_2G4, RGB_MATRIX_BLINK_2G4_COLOR);
             } break;
             case DEVS_USB: {
-                rgb_matrix_set_color(RGB_MATRIX_BLINK_INDEX_2G4, RGB_MATRIX_BLINK_2G4_COLOR);
+                rgb_matrix_set_color(RGB_MATRIX_BLINK_INDEX_USB, RGB_MATRIX_BLINK_USB_COLOR);
             } break;
             default:
                 break;
         }
     }
+}
+
+static void battery_vol_display(void) {
+    if (query_vol_flag) {
+        for (uint8_t i = 0; i < 10; i++) {
+            uint8_t pvol      = bts_info.bt_info.pvol;
+            uint8_t led_count = (pvol < 20) ? 2 : ((pvol / 10) > 10 ? 10 : (pvol / 10));
+
+            RGB color;
+            if (pvol < 30) {
+                color = (RGB){RGB_RED}; // 红色
+            } else if (pvol < 60) {
+                color = (RGB){RGB_YELLOW}; // 黄色
+            } else {
+                color = (RGB){RGB_GREEN}; // 绿色
+            }
+
+            for (uint8_t i = 0; i < led_count; i++) {
+                rgb_matrix_set_color(query_index[i], color.r, color.g, color.b);
+            }
+        }
+    }
+}
+
+bool bt_rgb_matrix_indicators_user(void) {
+#    ifdef RGB_MATRIX_BLINK_ENABLE
+    rgb_matrix_blink_task();
+#    endif
+
+    show_device_state();
+
+    battery_vol_display();
+
+    charging_indication();
+    if ((mm_eeconfig.devs != DEVS_USB) && (get_battery_charge_state() == BATTERY_STATE_UNPLUGGED)) {
+        low_battery_warning();
+    }
 
     return true;
+}
+
+void bt_housekeeping_task_user(void) {
+    if ((mm_eeconfig.devs != DEVS_USB) && (get_battery_charge_state() == BATTERY_STATE_UNPLUGGED)) {
+        low_battery_shutdown();
+    }
+}
+
+bool get_kb_sleep_flag(void) {
+#    ifdef CLOSE_RGB_ENABLE
+    return kb_sleep_flag;
+#    else
+    return false;
+#    endif
 }
 #endif

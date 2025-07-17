@@ -32,12 +32,12 @@ void matrix_init_kb(void) {
     matrix_init_user();
 }
 
-void matrix_scan_kb(void) {
+void housekeeping_task_kb(void) {
 #ifdef MULTIMODE_ENABLE
     mm_task();
 #endif
 
-    matrix_scan_user();
+    housekeeping_task_user();
 }
 
 bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
@@ -46,7 +46,7 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
     }
 
 #ifdef MULTIMODE_ENABLE
-    if (process_record_multimode(keycode, record) != true) {
+    if (!process_record_multimode(keycode, record)) {
         return false;
     }
 #endif
@@ -75,10 +75,10 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
 }
 
 bool rgb_matrix_indicators_kb(void) {
-    // rgb_matrix_set_color(79, RGB_OFF);
-    // rgb_matrix_set_color(78, RGB_OFF);
-    // rgb_matrix_set_color(76, RGB_OFF);
-    // rgb_matrix_set_color(75, RGB_OFF);
+    if (!rgb_matrix_get_flags()) {
+        rgb_matrix_set_color_all(RGB_OFF);
+    }
+
     if (!rgb_matrix_indicators_user()) {
         return false;
     }
@@ -86,32 +86,15 @@ bool rgb_matrix_indicators_kb(void) {
     return true;
 }
 
-#ifdef RGB_MATRIX_ENABLE
-#    ifdef RGB_MATRIX_BLINK_ENABLE
-#        include "rgb_matrix_blink.h"
-#    endif
-bool rgb_matrix_indicators_advanced_kb(uint8_t led_min, uint8_t led_max) {
-    if (rgb_matrix_indicators_advanced_user(led_min, led_max) != true) {
-        return false;
-    }
-
-#    ifdef RGB_MATRIX_BLINK_ENABLE
-    rgb_matrix_blink_task(led_min, led_max);
-#    endif
-
-    return true;
-}
-#endif
-
 void keyboard_pre_init_kb(void) {
-    setPinOutputPushPull(RGB_MATRIX_SHUTDOWN_PIN);
-    writePinHigh(RGB_MATRIX_SHUTDOWN_PIN);
+    setPinOutputPushPull(RGB_DRIVER_SDB_PIN);
+    writePinHigh(RGB_DRIVER_SDB_PIN);
 }
 
 void suspend_power_down_kb(void) {
-    writePinLow(RGB_MATRIX_SHUTDOWN_PIN);
+    writePinLow(RGB_DRIVER_SDB_PIN);
 }
 
 void suspend_wakeup_init_kb(void) {
-    writePinHigh(RGB_MATRIX_SHUTDOWN_PIN);
+    writePinHigh(RGB_DRIVER_SDB_PIN);
 }

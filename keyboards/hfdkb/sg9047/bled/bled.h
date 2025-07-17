@@ -45,5 +45,8 @@ typedef union {
 
 void bled_task(void);
 bool bled_process_record_user(uint16_t keycode, keyrecord_t *record);
+bool bled_rgb_matrix_indicators_user(void);
+void bled_keyboard_post_init_user(void);
+void bled_eeconfig_init_user(void);
 
 #endif // BLED_H

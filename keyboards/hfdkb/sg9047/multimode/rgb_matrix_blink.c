@@ -98,7 +98,7 @@ bool rgb_matrix_blink_set_interval_times(uint8_t index, uint32_t interval, uint3
     return false;
 }
 
-void rgb_matrix_blink_task(uint8_t led_min, uint8_t led_max) {
+void rgb_matrix_blink_task(void) {
     for (uint8_t rgb_index = 0; rgb_index < NUM_BLINK_RGBS; rgb_index++) {
         if (blink_rgbs[rgb_index].remain_time != 0) {
             if ((blink_rgbs[rgb_index].time == 0) || (timer_elapsed32(blink_rgbs[rgb_index].time) >= blink_rgbs[rgb_index].interval)) {

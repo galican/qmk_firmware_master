@@ -25,4 +25,4 @@ bool rgb_matrix_blink_set_interval(uint8_t index, uint32_t interval);
 bool rgb_matrix_blink_set_times(uint8_t index, uint32_t times);
 bool rgb_matrix_blink_set_remain_time(uint8_t index, uint32_t time);
 bool rgb_matrix_blink_set_interval_times(uint8_t index, uint32_t interval, uint32_t times);
-void rgb_matrix_blink_task(uint8_t led_min, uint8_t led_max);
+void rgb_matrix_blink_task(void);
