@@ -62,3 +62,4 @@ bool get_kb_sleep_flag(void);
 bool bt_rgb_matrix_indicators_user(void);
 void wl_rgb_indicator_set(uint8_t index, uint8_t status);
 void bt_housekeeping_task_user(void);
+void bt_keyboard_post_init_user(void);

@@ -52,6 +52,21 @@
 #    define RGB_MATRIX_BLINK_USB_COLOR RGB_WHITE    // USB指示灯颜色
 
 #    define BATTERY_VOL_DISPLAY_INDEX 26, 25, 24, 23, 22, 21, 20, 19, 18, 17
+
+// Helper functions
+// We don't need bled blink
+#    define CUSTOM_RGB_MATRIX_SET_ALL_COLOR
+
+#    ifdef CUSTOM_RGB_MATRIX_SET_ALL_COLOR
+#        define RGB_MATRIX_SET_ALL_COLOR(r, g, b)     \
+            do {                                      \
+                for (uint8_t i = 0; i < 83; i++) {    \
+                    rgb_matrix_set_color(i, r, g, b); \
+                }                                     \
+            } while (0)
+#    else
+#        define RGB_MATRIX_SET_ALL_COLOR(r, g, b) rgb_matrix_set_color_all(r, g, b)
+#    endif
 #endif
 
 /* SPI Config for spi flash*/

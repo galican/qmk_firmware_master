@@ -85,9 +85,21 @@ const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
 
 uint8_t  all_blink_cnt;
 uint32_t all_blink_time;
-RGB      all_blink_color;
 uint32_t long_pressed_time;
 uint16_t long_pressed_keycode;
+
+#define set_all_led_color_white()                   \
+    do {                                            \
+        for (uint8_t i = 0; i < 83; i++) {          \
+            rgb_matrix_set_color(i, 100, 100, 100); \
+        }                                           \
+    } while (0)
+#define set_all_led_off()                     \
+    do {                                      \
+        for (uint8_t i = 0; i < 83; i++) {    \
+            rgb_matrix_set_color(i, 0, 0, 0); \
+        }                                     \
+    } while (0)
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     if (!bled_process_record_user(keycode, record)) {
@@ -117,9 +129,8 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                     keymap_config.no_gui = false;
                     eeconfig_update_keymap(&keymap_config);
                 }
-                all_blink_cnt   = 6;
-                all_blink_time  = timer_read32();
-                all_blink_color = (RGB){RGB_WHITE}; // White color
+                all_blink_cnt  = 6;
+                all_blink_time = timer_read32();
             }
             return true;
 
@@ -127,9 +138,8 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             if (record->event.pressed) {
                 rgb_matrix_increase_val();
                 if (rgb_matrix_get_val() >= RGB_MATRIX_MAXIMUM_BRIGHTNESS) {
-                    all_blink_cnt   = 6;
-                    all_blink_time  = timer_read32();
-                    all_blink_color = (RGB){RGB_WHITE}; // White color
+                    all_blink_cnt  = 6;
+                    all_blink_time = timer_read32();
                 }
             }
             return false;
@@ -137,9 +147,8 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             if (record->event.pressed) {
                 rgb_matrix_decrease_val();
                 if (rgb_matrix_get_val() == 0) {
-                    all_blink_cnt   = 6;
-                    all_blink_time  = timer_read32();
-                    all_blink_color = (RGB){RGB_WHITE}; // White color
+                    all_blink_cnt  = 6;
+                    all_blink_time = timer_read32();
                 }
             }
             return false;
@@ -147,9 +156,8 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             if (record->event.pressed) {
                 rgb_matrix_increase_speed();
                 if (rgb_matrix_get_speed() >= UINT8_MAX) {
-                    all_blink_cnt   = 6;
-                    all_blink_time  = timer_read32();
-                    all_blink_color = (RGB){RGB_WHITE}; // White color
+                    all_blink_cnt  = 6;
+                    all_blink_time = timer_read32();
                 }
             }
             return false;
@@ -157,9 +165,8 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             if (record->event.pressed) {
                 rgb_matrix_decrease_speed();
                 if (rgb_matrix_get_speed() == 0) {
-                    all_blink_cnt   = 6;
-                    all_blink_time  = timer_read32();
-                    all_blink_color = (RGB){RGB_WHITE}; // White color
+                    all_blink_cnt  = 6;
+                    all_blink_time = timer_read32();
                 }
             }
             return false;
@@ -177,6 +184,10 @@ void keyboard_post_init_user(void) {
         keymap_config.no_gui = false; // Reset no_gui to false
         eeconfig_update_keymap(&keymap_config);
     }
+
+#ifdef MULTIMODE_ENABLE
+    bt_keyboard_post_init_user();
+#endif
 }
 
 void eeconfig_init_user(void) {
@@ -187,33 +198,30 @@ void housekeeping_task_user(void) {
     if ((timer_elapsed32(long_pressed_time) > 3000) && (long_pressed_time)) {
         long_pressed_time = 0;
         switch (long_pressed_keycode) {
-            case EE_CLR:
-                all_blink_cnt   = 6;
-                all_blink_time  = timer_read32();
-                all_blink_color = (RGB){RGB_WHITE}; // White color
-                if (!all_blink_cnt) {
-                    eeconfig_init();
-                    eeconfig_update_rgb_matrix_default();
-                    if (get_highest_layer(default_layer_state | layer_state) != 0) {
-                        set_single_persistent_default_layer(0);
-                    }
+            case EE_CLR: {
+                eeconfig_init();
+                eeconfig_update_rgb_matrix_default();
+                if (get_highest_layer(default_layer_state | layer_state) != 0) {
+                    set_single_persistent_default_layer(0);
+                }
 #ifdef MULTIMODE_ENABLE
-                    // eeconfig_update_multimode_default();
-                    // matrix_init_kb();
-                    if (mm_eeconfig.devs != DEVS_USB && mm_eeconfig.devs != DEVS_2G4) {
-                        bts_send_vendor(v_clear);
-                        wait_ms(1000);
-                        wl_rgb_indicator_set(mm_eeconfig.devs, wls_lback);
-                    }
+                // eeconfig_update_multimode_default();
+                // matrix_init_kb();
+                if (mm_eeconfig.devs != DEVS_USB && mm_eeconfig.devs != DEVS_2G4) {
+                    bts_send_vendor(v_clear);
+                    wait_ms(1000);
+                    // wl_rgb_indicator_set(mm_eeconfig.devs, wls_lback);
+                    mm_switch_mode(mm_eeconfig.last_devs, mm_eeconfig.devs, false);
+                    // rgb_matrix_blink_set_remain_time(mm_eeconfig.devs, 0x00);
+                }
 #    ifdef RGB_MATRIX_BLINK_ENABLE
-                    extern bool rgb_matrix_blink_set(uint8_t index);
-                    rgb_matrix_blink_set(RGB_MATRIX_BLINK_INDEX_ALL);
+                extern bool rgb_matrix_blink_set(uint8_t index);
+                rgb_matrix_blink_set(RGB_MATRIX_BLINK_INDEX_ALL);
 #    endif
 #endif
-                    keymap_config.no_gui = false;
-                }
+                keymap_config.no_gui = false;
+            } break;
 
-                break;
             default:
                 break;
         }
@@ -233,21 +241,12 @@ void housekeeping_task_user(void) {
 }
 
 #ifdef RGB_MATRIX_ENABLE
-
-#    define n_rgb_matrix_set_color_all(r, g, b)   \
-        do {                                      \
-            for (uint8_t i = 0; i <= 82; i++) {   \
-                rgb_matrix_set_color(i, r, g, b); \
-            }                                     \
-        } while (0)
-#    define n_rgb_matrix_off_all()                \
-        do {                                      \
-            for (uint8_t i = 0; i <= 82; i++) {   \
-                rgb_matrix_set_color(i, 0, 0, 0); \
-            }                                     \
-        } while (0)
-
 bool rgb_matrix_indicators_user(void) {
+    // BLED related indicators, bled_task()`
+    if (!bled_rgb_matrix_indicators_user()) {
+        return false;
+    }
+
     // caps lock red
     if (host_keyboard_led_state().caps_lock && (mm_eeconfig.devs == DEVS_USB || bts_info.bt_info.paired)) {
         rgb_matrix_set_color(CAPS_LOCK_LED_INDEX, RGB_WHITE);
@@ -258,26 +257,26 @@ bool rgb_matrix_indicators_user(void) {
         rgb_matrix_set_color(GUI_LOCK_LED_INDEX, RGB_WHITE);
     }
 
+    // Bluetooth related indicators
 #    ifdef MULTIMODE_ENABLE
     if (!bt_rgb_matrix_indicators_user()) {
         return false;
     }
 #    endif
 
-    if (!bled_rgb_matrix_indicators_user()) {
-        return false;
-    }
-
-    // 全键闪烁
-    if (all_blink_cnt) {
+    // All LEDs blink
+    if (all_blink_cnt && all_blink_time) {
         // Turn off all LEDs before blinking
-        n_rgb_matrix_off_all();
+        set_all_led_off();
         if (timer_elapsed32(all_blink_time) > 300) {
             all_blink_time = timer_read32();
             all_blink_cnt--;
+            if (!all_blink_cnt) {
+                all_blink_time = 0;
+            }
         }
         if (all_blink_cnt & 0x1) {
-            n_rgb_matrix_set_color_all(all_blink_color.r, all_blink_color.g, all_blink_color.b);
+            set_all_led_color_white();
         }
     }
 

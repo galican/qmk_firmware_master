@@ -87,14 +87,20 @@ bool rgb_matrix_indicators_kb(void) {
 }
 
 void keyboard_pre_init_kb(void) {
+#ifdef RGB_DRIVER_SDB_PIN
     setPinOutputPushPull(RGB_DRIVER_SDB_PIN);
     writePinHigh(RGB_DRIVER_SDB_PIN);
+#endif
 }
 
 void suspend_power_down_kb(void) {
+#ifdef RGB_DRIVER_SDB_PIN
     writePinLow(RGB_DRIVER_SDB_PIN);
+#endif
 }
 
 void suspend_wakeup_init_kb(void) {
+#ifdef RGB_DRIVER_SDB_PIN
     writePinHigh(RGB_DRIVER_SDB_PIN);
+#endif
 }

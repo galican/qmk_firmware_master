@@ -123,13 +123,13 @@ void rgb_matrix_blink_task(void) {
                 if (blink_rgbs[rgb_index].index != 0xFF) {
                     rgb_matrix_set_color(blink_rgbs[rgb_index].index, blink_rgbs[rgb_index].color.r, blink_rgbs[rgb_index].color.g, blink_rgbs[rgb_index].color.b);
                 } else {
-                    rgb_matrix_set_color_all(blink_rgbs[rgb_index].color.r, blink_rgbs[rgb_index].color.g, blink_rgbs[rgb_index].color.b);
+                    RGB_MATRIX_SET_ALL_COLOR(blink_rgbs[rgb_index].color.r, blink_rgbs[rgb_index].color.g, blink_rgbs[rgb_index].color.b);
                 }
             } else {
                 if (blink_rgbs[rgb_index].index != 0xFF) {
                     rgb_matrix_set_color(blink_rgbs[rgb_index].index, 0x00, 0x00, 0x00);
                 } else {
-                    rgb_matrix_set_color_all(0x00, 0x00, 0x00);
+                    RGB_MATRIX_SET_ALL_COLOR(0x00, 0x00, 0x00);
                 }
             }
         } else {

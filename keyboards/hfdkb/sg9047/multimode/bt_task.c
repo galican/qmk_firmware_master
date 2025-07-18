@@ -135,8 +135,9 @@ static void wl_indicators_hook(uint8_t index) {
                     } break;
 #    ifdef RGB_MATRIX_BLINK_INDEX_USB
                     case RGB_MATRIX_BLINK_INDEX_USB: {
-                        rgb_matrix_blink_set_color(index, RGB_OFF);
-                        rgb_matrix_blink_set_interval_times(index, USB_CONN_BLINK_INTERVAL, 0xFF); // 长亮
+                        // rgb_matrix_blink_set_color(index, RGB_OFF);
+                        rgb_matrix_blink_set_color(index, RGB_MATRIX_BLINK_USB_COLOR);
+                        rgb_matrix_blink_set_interval_times(index, USB_CONN_BLINK_INTERVAL, 1);
                         rgb_matrix_blink_set(index);
                         wl_rgb_timer = timer_read32();
                         return;
@@ -279,9 +280,18 @@ void wl_rgb_indicator_set(uint8_t index, uint8_t status) {
     rgb_matrix_blink_set_remain_time(RGB_MATRIX_BLINK_INDEX_HOST1, 0x00);
     rgb_matrix_blink_set_remain_time(RGB_MATRIX_BLINK_INDEX_HOST2, 0x00);
     rgb_matrix_blink_set_remain_time(RGB_MATRIX_BLINK_INDEX_HOST3, 0x00);
+#    ifdef RGB_MATRIX_BLINK_INDEX_HOST4
+    rgb_matrix_blink_set_remain_time(RGB_MATRIX_BLINK_INDEX_HOST4, 0x00);
+#    endif
+#    ifdef RGB_MATRIX_BLINK_INDEX_HOST5
+    rgb_matrix_blink_set_remain_time(RGB_MATRIX_BLINK_INDEX_HOST5, 0x00);
+#    endif
     rgb_matrix_blink_set_remain_time(RGB_MATRIX_BLINK_INDEX_2G4, 0x00);
 #    ifdef RGB_MATRIX_BLINK_INDEX_USB
     rgb_matrix_blink_set_remain_time(RGB_MATRIX_BLINK_INDEX_USB, 0x00);
+#    endif
+#    ifdef RGB_MATRIX_BLINK_INDEX_ALL
+    rgb_matrix_blink_set_remain_time(RGB_MATRIX_BLINK_INDEX_ALL, 0x00);
 #    endif
     wl_rgb_indicator_s = status;
     rgb_blink_cb(index);
@@ -302,7 +312,7 @@ blink_rgb_t blink_rgbs[RGB_MATRIX_BLINK_COUNT] = {
 #    ifdef RGB_MATRIX_BLINK_INDEX_USB
     {.index = RGB_MATRIX_BLINK_INDEX_USB, .interval = 250, .times = 1, .color = {.r = 0x00, .g = 0xFF, .b = 0x00}, .blink_cb = rgb_blink_cb},
 #    endif
-    {.index = RGB_MATRIX_BLINK_INDEX_ALL, .interval = 250, .times = 3, .color = {.r = 0xFF, .g = 0x00, .b = 0x00}, .blink_cb = rgb_blink_cb},
+    {.index = RGB_MATRIX_BLINK_INDEX_ALL, .interval = 300, .times = 3, .color = {.r = 0x64, .g = 0x64, .b = 0x64}, .blink_cb = rgb_blink_cb},
 };
 // clang-format on
 #endif
@@ -334,22 +344,22 @@ static void bt_long_press_keys_cb(uint16_t keycode) {
         case BT_HOST1: {
             dprintf("reset to host1\n");
             mm_switch_mode(mm_eeconfig.devs, DEVS_HOST1, true);
-            wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST1, wls_pair);
+            // wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST1, wls_pair);
         } break;
         case BT_HOST2: {
             dprintf("reset to host2\n");
             mm_switch_mode(mm_eeconfig.devs, DEVS_HOST2, true);
-            wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST2, wls_pair);
+            // wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST2, wls_pair);
         } break;
         case BT_HOST3: {
             dprintf("reset to host3\n");
             mm_switch_mode(mm_eeconfig.devs, DEVS_HOST3, true);
-            wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST3, wls_pair);
+            // wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST3, wls_pair);
         } break;
         case BT_2G4: {
             dprintf("reset to 2g4\n");
             mm_switch_mode(mm_eeconfig.devs, DEVS_2G4, true);
-            wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_2G4, wls_pair);
+            // wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_2G4, wls_pair);
         } break;
         default:
             break;
@@ -417,7 +427,7 @@ bool bt_process_record_user(uint16_t keycode, keyrecord_t *record) {
             if (record->event.pressed && (mm_eeconfig.devs != DEVS_HOST1)) {
                 dprintf("switch to host1\n");
                 mm_switch_mode(mm_eeconfig.devs, DEVS_HOST1, false);
-                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST1, wls_lback);
+                //     wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST1, wls_lback);
             }
             return false;
         } break;
@@ -425,7 +435,7 @@ bool bt_process_record_user(uint16_t keycode, keyrecord_t *record) {
             if (record->event.pressed && (mm_eeconfig.devs != DEVS_HOST2)) {
                 dprintf("switch to host2\n");
                 mm_switch_mode(mm_eeconfig.devs, DEVS_HOST2, false);
-                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST2, wls_lback);
+                // wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST2, wls_lback);
             }
             return false;
         } break;
@@ -433,7 +443,7 @@ bool bt_process_record_user(uint16_t keycode, keyrecord_t *record) {
             if (record->event.pressed && (mm_eeconfig.devs != DEVS_HOST3)) {
                 dprintf("switch to host3\n");
                 mm_switch_mode(mm_eeconfig.devs, DEVS_HOST3, false);
-                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST3, wls_lback);
+                // wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST3, wls_lback);
             }
             return false;
         } break;
@@ -441,7 +451,7 @@ bool bt_process_record_user(uint16_t keycode, keyrecord_t *record) {
             if (record->event.pressed && (mm_eeconfig.devs != DEVS_2G4)) {
                 dprintf("switch to 2g4\n");
                 mm_switch_mode(mm_eeconfig.devs, DEVS_2G4, false);
-                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_2G4, wls_lback);
+                // wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_2G4, wls_lback);
             }
             return false;
         } break;
@@ -450,7 +460,7 @@ bool bt_process_record_user(uint16_t keycode, keyrecord_t *record) {
                 dprintf("switch to usb\n");
                 mm_switch_mode(mm_eeconfig.devs, DEVS_USB, false);
 #    ifdef RGB_MATRIX_BLINK_INDEX_USB
-                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_USB, wls_lback);
+                // wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_USB, wls_lback);
 #    endif
             }
         } break;
@@ -580,18 +590,24 @@ static void battery_vol_display(void) {
 }
 
 bool bt_rgb_matrix_indicators_user(void) {
+    // Low battery warning
+    if ((mm_eeconfig.devs != DEVS_USB) && (get_battery_charge_state() == BATTERY_STATE_UNPLUGGED)) {
+        low_battery_warning();
+    }
+
+    // Show the current device state
+    show_device_state();
+
+    // Battery voltage display
+    battery_vol_display();
+
+    // Device connection indication
 #    ifdef RGB_MATRIX_BLINK_ENABLE
     rgb_matrix_blink_task();
 #    endif
 
-    show_device_state();
-
-    battery_vol_display();
-
+    // Charging indication
     charging_indication();
-    if ((mm_eeconfig.devs != DEVS_USB) && (get_battery_charge_state() == BATTERY_STATE_UNPLUGGED)) {
-        low_battery_warning();
-    }
 
     return true;
 }
@@ -600,6 +616,12 @@ void bt_housekeeping_task_user(void) {
     if ((mm_eeconfig.devs != DEVS_USB) && (get_battery_charge_state() == BATTERY_STATE_UNPLUGGED)) {
         low_battery_shutdown();
     }
+}
+
+void bt_keyboard_post_init_user(void) {
+    // #    ifdef RGB_MATRIX_BLINK_INDEX_ALL
+    //     rgb_matrix_blink_set_remain_time(RGB_MATRIX_BLINK_INDEX_ALL, 0x00);
+    // #    endif
 }
 
 bool get_kb_sleep_flag(void) {

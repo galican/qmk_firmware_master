@@ -76,29 +76,9 @@ bts_info_t    bts_info    = {
           .timer_read32   = timer_read32,
 };
 
-typedef struct {
-    uint8_t buttons;
-    int8_t  x;
-    int8_t  y;
-    int8_t  z;
-    int8_t  h;
-} __attribute__((packed)) mm_report_mouse_t;
-// clang-format off
-uint8_t mm_device_index[RGB_MATRIX_BLINK_COUNT] = {
-    RGB_MATRIX_BLINK_INDEX_USB,
-    RGB_MATRIX_BLINK_INDEX_HOST1,
-    RGB_MATRIX_BLINK_INDEX_HOST2,
-    RGB_MATRIX_BLINK_INDEX_HOST3,
-    // RGB_MATRIX_BLINK_INDEX_HOST4,
-    // RGB_MATRIX_BLINK_INDEX_HOST5,
-    RGB_MATRIX_BLINK_INDEX_2G4,
-};
-// clang-format on
 extern host_driver_t chibios_driver;
 
 mm_mode_t now_mode = MM_MODE_USB;
-
-static void mm_send_mouse(report_mouse_t *report);
 
 // local
 static uint32_t bt_init_time = 0;
@@ -167,6 +147,7 @@ void mm_init(void) {
     if (!mm_eeconfig.raw) {
         eeconfig_update_multimode_default();
     }
+
     eeconfig_debug_multimode(); // display current eeprom values
 
     bt_init_time = timer_read32();
@@ -187,20 +168,44 @@ void mm_task(void) {
 
         if (MM_BT_SLEEP_EN) {
             bts_send_vendor(v_en_sleep_bt);
-            wait_ms(50);
         } else {
             bts_send_vendor(v_dis_sleep_bt);
-            wait_ms(50);
         }
 
         if (MM_2G4_SLEEP_EN) {
             bts_send_vendor(v_en_sleep_wl);
-            wait_ms(50);
         } else {
             bts_send_vendor(v_dis_sleep_wl);
-            wait_ms(50);
         }
 
+        bts_send_name(DEVS_HOST1);
+        switch (mm_eeconfig.devs) {
+            case DEVS_HOST1: {
+                bts_send_vendor(v_host1);
+            } break;
+            case DEVS_HOST2: {
+                bts_send_vendor(v_host2);
+            } break;
+            case DEVS_HOST3: {
+                bts_send_vendor(v_host3);
+            } break;
+            case DEVS_2G4: {
+                bts_send_vendor(v_2g4);
+            } break;
+            default: {
+                bts_send_vendor(v_usb);
+                mm_eeconfig.devs = DEVS_USB;
+                eeconfig_update_kb(mm_eeconfig.raw);
+            } break;
+        }
+
+        //
+        // mm_switch_mode(!mm_eeconfig.devs, mm_eeconfig.devs, false);
+    }
+
+    static bool is_inited = false;
+    if (!is_inited) {
+        is_inited = true;
         mm_switch_mode(!mm_eeconfig.devs, mm_eeconfig.devs, false);
     }
 
@@ -236,7 +241,7 @@ void mm_task(void) {
     }
 
     // mode scan
-    mm_mode_scan();
+    if (!bt_init_time) mm_mode_scan();
 }
 
 __attribute__((weak)) void mm_switch_mode(uint8_t last_mode, uint8_t now_mode, uint8_t reset) {
@@ -244,24 +249,10 @@ __attribute__((weak)) void mm_switch_mode(uint8_t last_mode, uint8_t now_mode, u
 
     if (usb_sws) {
         if (!!now_mode) {
-#ifdef MM_USB_EN_PIN
-            writePin(MM_USB_EN_PIN, !MM_USB_EN_STATE);
-#endif
-            if (USB_DRIVER.state != USB_STOP) {
-                usbDisconnectBus(&USB_DRIVER);
-                usbStop(&USB_DRIVER);
-                chibios_driver.send_mouse = mm_send_mouse;
-                host_set_driver(&chibios_driver);
-            }
+            usbDisconnectBus(&USB_DRIVER);
+            usbStop(&USB_DRIVER);
         } else {
-#ifdef MM_USB_EN_PIN
-            writePin(MM_USB_EN_PIN, MM_USB_EN_STATE);
-#endif
-            extern void send_mouse(report_mouse_t * report);
-            chibios_driver.send_mouse = send_mouse;
-            mm_eeconfig.devs          = DEVS_USB;
             init_usb_driver(&USB_DRIVER);
-            host_set_driver(&chibios_driver);
         }
     }
 
@@ -269,6 +260,15 @@ __attribute__((weak)) void mm_switch_mode(uint8_t last_mode, uint8_t now_mode, u
     if (mm_eeconfig.devs != DEVS_USB && mm_eeconfig.devs != DEVS_2G4) {
         mm_eeconfig.last_devs = mm_eeconfig.devs;
     }
+
+#ifdef MM_USB_EN_PIN
+    if (mm_eeconfig.devs == DEVS_USB) {
+        writePin(MM_USB_EN_PIN, MM_USB_EN_STATE);
+    } else {
+        writePin(MM_USB_EN_PIN, !MM_USB_EN_STATE);
+    }
+#endif
+
     bts_info.bt_info.pairing       = false;
     bts_info.bt_info.paired        = false;
     bts_info.bt_info.come_back     = false;
@@ -279,8 +279,8 @@ __attribute__((weak)) void mm_switch_mode(uint8_t last_mode, uint8_t now_mode, u
     switch (mm_eeconfig.devs) {
         case DEVS_HOST1: {
             if (reset != false) {
-                bts_send_vendor(v_host1);
-                bts_send_name(DEVS_HOST1);
+                // bts_send_vendor(v_host1);
+                // bts_send_name(DEVS_HOST1);
                 bts_send_vendor(v_pair);
             } else if (last_mode != DEVS_HOST1) {
                 bts_send_vendor(v_host1);
@@ -288,8 +288,8 @@ __attribute__((weak)) void mm_switch_mode(uint8_t last_mode, uint8_t now_mode, u
         } break;
         case DEVS_HOST2: {
             if (reset != false) {
-                bts_send_vendor(v_host2);
-                bts_send_name(DEVS_HOST2);
+                // bts_send_vendor(v_host2);
+                // bts_send_name(DEVS_HOST2);
                 bts_send_vendor(v_pair);
             } else if (last_mode != DEVS_HOST2) {
                 bts_send_vendor(v_host2);
@@ -297,8 +297,8 @@ __attribute__((weak)) void mm_switch_mode(uint8_t last_mode, uint8_t now_mode, u
         } break;
         case DEVS_HOST3: {
             if (reset != false) {
-                bts_send_vendor(v_host3);
-                bts_send_name(DEVS_HOST3);
+                // bts_send_vendor(v_host3);
+                // bts_send_name(DEVS_HOST3);
                 bts_send_vendor(v_pair);
             } else if (last_mode != DEVS_HOST3) {
                 bts_send_vendor(v_host3);
@@ -306,25 +306,27 @@ __attribute__((weak)) void mm_switch_mode(uint8_t last_mode, uint8_t now_mode, u
         } break;
         case DEVS_HOST4: {
             if (reset != false) {
-                bts_send_vendor(v_host4);
-                bts_send_name(DEVS_HOST4);
+                // bts_send_vendor(v_host4);
+                // bts_send_name(DEVS_HOST4);
                 bts_send_vendor(v_pair);
+
             } else if (last_mode != DEVS_HOST4) {
                 bts_send_vendor(v_host4);
             }
         } break;
         case DEVS_HOST5: {
             if (reset != false) {
-                bts_send_vendor(v_host5);
-                bts_send_name(DEVS_HOST5);
+                // bts_send_vendor(v_host5);
+                // bts_send_name(DEVS_HOST5);
                 bts_send_vendor(v_pair);
+
             } else if (last_mode != DEVS_HOST5) {
                 bts_send_vendor(v_host5);
             }
         } break;
         case DEVS_2G4: {
             if (reset != false) {
-                bts_send_vendor(v_2g4);
+                // bts_send_vendor(v_2g4);
                 bts_send_vendor(v_pair);
             } else if (last_mode != DEVS_2G4) {
                 bts_send_vendor(v_2g4);
@@ -338,8 +340,71 @@ __attribute__((weak)) void mm_switch_mode(uint8_t last_mode, uint8_t now_mode, u
             eeconfig_update_multimode_default();
         } break;
     }
-    if (!reset) {
-        wl_rgb_indicator_set(mm_device_index[mm_eeconfig.devs], wls_lback);
+
+    switch (mm_eeconfig.devs) {
+        case DEVS_HOST1:
+            if (reset) {
+                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST1, wls_pair);
+            } else {
+                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST1, wls_lback);
+            }
+            break;
+        case DEVS_HOST2:
+            if (reset) {
+                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST2, wls_pair);
+            } else {
+                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST2, wls_lback);
+            }
+            break;
+        case DEVS_HOST3:
+            if (reset) {
+                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST3, wls_pair);
+            } else {
+                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST3, wls_lback);
+            }
+            break;
+        case DEVS_HOST4:
+            if (reset) {
+#ifdef RGB_MATRIX_BLINK_INDEX_HOST4
+                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST4, wls_pair);
+#endif
+            } else {
+#ifdef RGB_MATRIX_BLINK_INDEX_HOST4
+                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST4, wls_lback);
+#endif
+            }
+            break;
+        case DEVS_HOST5:
+            if (reset) {
+#ifdef RGB_MATRIX_BLINK_INDEX_HOST5
+                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST5, wls_pair);
+#endif
+            } else {
+#ifdef RGB_MATRIX_BLINK_INDEX_HOST5
+                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST5, wls_lback);
+#endif
+            }
+            break;
+        case DEVS_2G4:
+            if (reset) {
+                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_2G4, wls_pair);
+            } else {
+                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_2G4, wls_lback);
+            }
+            break;
+        case DEVS_USB:
+            if (reset) {
+#ifdef RGB_MATRIX_BLINK_INDEX_USB
+                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_USB, wls_pair);
+#endif
+            } else {
+#ifdef RGB_MATRIX_BLINK_INDEX_USB
+                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_USB, wls_lback);
+#endif
+            }
+            break;
+        default:
+            break;
     }
 }
 
@@ -372,6 +437,7 @@ __attribute__((weak)) void mm_mode_scan(void) {
         default:
             break;
     }
+
 #endif
 #ifdef MM_MODE_SW_PIN // 用来检测无线和有线模式的PIN
 
@@ -686,15 +752,4 @@ __attribute__((weak)) void unregister_code16(uint16_t code) {
             do_code16(code, unregister_weak_mods);
         }
     }
-}
-
-static void mm_send_mouse(report_mouse_t *report) {
-    mm_report_mouse_t mm_mouse_report = {0};
-
-    mm_mouse_report.buttons = report->buttons;
-    mm_mouse_report.x       = report->x;
-    mm_mouse_report.y       = report->y;
-    mm_mouse_report.z       = report->v;
-    mm_mouse_report.h       = report->h;
-    bts_send_mouse_report((uint8_t *)&mm_mouse_report);
 }
