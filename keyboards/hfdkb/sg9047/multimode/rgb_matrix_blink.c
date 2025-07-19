@@ -4,7 +4,16 @@
 #include "quantum.h"
 #include "rgb_matrix_blink.h"
 
+#define BLINK_DEBUG_ENABLE
+#ifdef BLINK_DEBUG_ENABLE
+#    define BLINK_DEBUG_INFO(fmt, ...) uprintf(fmt, ##__VA_ARGS__)
+#else
+#    define BLINK_DEBUG_INFO(fmt, ...)
+#endif
+
 #define NUM_BLINK_RGBS (sizeof(blink_rgbs) / sizeof(blink_rgb_t))
+
+extern blink_rgb_t blink_rgbs[RGB_MATRIX_BLINK_COUNT];
 
 // /* Example */
 // blink_rgb_t blink_rgbs[RGB_MATRIX_BLINK_COUNT] = {
@@ -51,7 +60,7 @@ bool rgb_matrix_blink_set_cb(uint8_t index, void *blink_cb) {
     return false;
 }
 
-bool rgb_matrix_blink_set_interval(uint8_t index, uint32_t interval) {
+bool rgb_matrix_blink_set_interval(uint8_t index, uint8_t interval) {
     for (uint8_t i = 0; i < NUM_BLINK_RGBS; i++) {
         if (blink_rgbs[i].index == index) {
             blink_rgbs[i].interval = interval;
@@ -62,7 +71,7 @@ bool rgb_matrix_blink_set_interval(uint8_t index, uint32_t interval) {
     return false;
 }
 
-bool rgb_matrix_blink_set_times(uint8_t index, uint32_t times) {
+bool rgb_matrix_blink_set_times(uint8_t index, uint8_t times) {
     for (uint8_t i = 0; i < NUM_BLINK_RGBS; i++) {
         if (blink_rgbs[i].index == index) {
             blink_rgbs[i].times = times;
@@ -73,7 +82,7 @@ bool rgb_matrix_blink_set_times(uint8_t index, uint32_t times) {
     return false;
 }
 
-bool rgb_matrix_blink_set_remain_time(uint8_t index, uint32_t time) {
+bool rgb_matrix_blink_set_remain_time(uint8_t index, uint8_t time) {
     for (uint8_t i = 0; i < NUM_BLINK_RGBS; i++) {
         if (blink_rgbs[i].index == index) {
             blink_rgbs[i].remain_time = time;
@@ -84,7 +93,7 @@ bool rgb_matrix_blink_set_remain_time(uint8_t index, uint32_t time) {
     return false;
 }
 
-bool rgb_matrix_blink_set_interval_times(uint8_t index, uint32_t interval, uint32_t times) {
+bool rgb_matrix_blink_set_interval_times(uint8_t index, uint16_t interval, uint8_t times) {
     for (uint8_t i = 0; i < NUM_BLINK_RGBS; i++) {
         if (blink_rgbs[i].index == index) {
             blink_rgbs[i].interval = interval;

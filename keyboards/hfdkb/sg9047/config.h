@@ -41,8 +41,8 @@
 #    define RGB_MATRIX_BLINK_INDEX_HOST3 24
 #    define RGB_MATRIX_BLINK_INDEX_2G4 23
 #    define RGB_MATRIX_BLINK_INDEX_USB 22
-#    define RGB_MATRIX_BLINK_INDEX_ALL 0xFF
-#    define RGB_MATRIX_BLINK_COUNT 6
+// #    define RGB_MATRIX_BLINK_INDEX_ALL 0xFF
+#    define RGB_MATRIX_BLINK_COUNT 5
 
 // Indicate color of mm device
 #    define RGB_MATRIX_BLINK_HOST1_COLOR RGB_BLUE   // 蓝牙1指示灯颜色

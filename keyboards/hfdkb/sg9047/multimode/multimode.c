@@ -110,7 +110,7 @@ __attribute__((weak)) void mm_bts_task_kb(uint8_t devs) {
 static void mm_used_pin_init(void);
 
 void eeconfig_update_multimode_default(void) {
-    dprintf("eeconfig_update_multimode_default\n");
+    MM_DEBUG_INFO("eeconfig_update_multimode_default\n");
     mm_eeconfig.devs      = DEVS_USB;
     mm_eeconfig.last_devs = DEVS_HOST1;
     bt_init_time          = timer_read32();
@@ -118,9 +118,9 @@ void eeconfig_update_multimode_default(void) {
 }
 
 void eeconfig_debug_multimode(void) {
-    dprintf("eeconfig_debug_multimode EEPROM\n");
-    dprintf("mm_eeconfig.devs = %d\n", mm_eeconfig.devs);
-    dprintf("mm_eeconfig.last_devs = %d\n", mm_eeconfig.last_devs);
+    MM_DEBUG_INFO("eeconfig_debug_multimode EEPROM\n");
+    MM_DEBUG_INFO("mm_eeconfig.devs = %d\n", mm_eeconfig.devs);
+    MM_DEBUG_INFO("mm_eeconfig.last_devs = %d\n", mm_eeconfig.last_devs);
 }
 
 static void mm_used_pin_init(void) {
@@ -199,7 +199,6 @@ void mm_task(void) {
             } break;
         }
 
-        //
         // mm_switch_mode(!mm_eeconfig.devs, mm_eeconfig.devs, false);
     }
 
@@ -282,8 +281,10 @@ __attribute__((weak)) void mm_switch_mode(uint8_t last_mode, uint8_t now_mode, u
                 // bts_send_vendor(v_host1);
                 // bts_send_name(DEVS_HOST1);
                 bts_send_vendor(v_pair);
+                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST1, wls_pair);
             } else if (last_mode != DEVS_HOST1) {
                 bts_send_vendor(v_host1);
+                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST1, wls_lback);
             }
         } break;
         case DEVS_HOST2: {
@@ -291,8 +292,10 @@ __attribute__((weak)) void mm_switch_mode(uint8_t last_mode, uint8_t now_mode, u
                 // bts_send_vendor(v_host2);
                 // bts_send_name(DEVS_HOST2);
                 bts_send_vendor(v_pair);
+                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST2, wls_pair);
             } else if (last_mode != DEVS_HOST2) {
                 bts_send_vendor(v_host2);
+                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST2, wls_lback);
             }
         } break;
         case DEVS_HOST3: {
@@ -300,8 +303,10 @@ __attribute__((weak)) void mm_switch_mode(uint8_t last_mode, uint8_t now_mode, u
                 // bts_send_vendor(v_host3);
                 // bts_send_name(DEVS_HOST3);
                 bts_send_vendor(v_pair);
+                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST3, wls_pair);
             } else if (last_mode != DEVS_HOST3) {
                 bts_send_vendor(v_host3);
+                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST3, wls_lback);
             }
         } break;
         case DEVS_HOST4: {
@@ -309,9 +314,14 @@ __attribute__((weak)) void mm_switch_mode(uint8_t last_mode, uint8_t now_mode, u
                 // bts_send_vendor(v_host4);
                 // bts_send_name(DEVS_HOST4);
                 bts_send_vendor(v_pair);
-
+#ifdef RGB_MATRIX_BLINK_INDEX_HOST4
+                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST4, wls_pair);
+#endif
             } else if (last_mode != DEVS_HOST4) {
                 bts_send_vendor(v_host4);
+#ifdef RGB_MATRIX_BLINK_INDEX_HOST4
+                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST4, wls_lback);
+#endif
             }
         } break;
         case DEVS_HOST5: {
@@ -319,92 +329,39 @@ __attribute__((weak)) void mm_switch_mode(uint8_t last_mode, uint8_t now_mode, u
                 // bts_send_vendor(v_host5);
                 // bts_send_name(DEVS_HOST5);
                 bts_send_vendor(v_pair);
-
+#ifdef RGB_MATRIX_BLINK_INDEX_HOST5
+                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST5, wls_pair);
+#endif
             } else if (last_mode != DEVS_HOST5) {
                 bts_send_vendor(v_host5);
+#ifdef RGB_MATRIX_BLINK_INDEX_HOST5
+                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST5, wls_lback);
+#endif
             }
         } break;
         case DEVS_2G4: {
             if (reset != false) {
                 // bts_send_vendor(v_2g4);
                 bts_send_vendor(v_pair);
+                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_2G4, wls_pair);
             } else if (last_mode != DEVS_2G4) {
                 bts_send_vendor(v_2g4);
+                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_2G4, wls_lback);
             }
         } break;
         case DEVS_USB: {
             bts_send_vendor(v_usb);
+#ifdef RGB_MATRIX_BLINK_INDEX_USB
+            wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_USB, wls_lback);
+#endif
         } break;
         default: {
             bts_send_vendor(v_usb);
             eeconfig_update_multimode_default();
+#ifdef RGB_MATRIX_BLINK_INDEX_USB
+            wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_USB, wls_lback);
+#endif
         } break;
-    }
-
-    switch (mm_eeconfig.devs) {
-        case DEVS_HOST1:
-            if (reset) {
-                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST1, wls_pair);
-            } else {
-                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST1, wls_lback);
-            }
-            break;
-        case DEVS_HOST2:
-            if (reset) {
-                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST2, wls_pair);
-            } else {
-                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST2, wls_lback);
-            }
-            break;
-        case DEVS_HOST3:
-            if (reset) {
-                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST3, wls_pair);
-            } else {
-                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST3, wls_lback);
-            }
-            break;
-        case DEVS_HOST4:
-            if (reset) {
-#ifdef RGB_MATRIX_BLINK_INDEX_HOST4
-                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST4, wls_pair);
-#endif
-            } else {
-#ifdef RGB_MATRIX_BLINK_INDEX_HOST4
-                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST4, wls_lback);
-#endif
-            }
-            break;
-        case DEVS_HOST5:
-            if (reset) {
-#ifdef RGB_MATRIX_BLINK_INDEX_HOST5
-                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST5, wls_pair);
-#endif
-            } else {
-#ifdef RGB_MATRIX_BLINK_INDEX_HOST5
-                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST5, wls_lback);
-#endif
-            }
-            break;
-        case DEVS_2G4:
-            if (reset) {
-                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_2G4, wls_pair);
-            } else {
-                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_2G4, wls_lback);
-            }
-            break;
-        case DEVS_USB:
-            if (reset) {
-#ifdef RGB_MATRIX_BLINK_INDEX_USB
-                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_USB, wls_pair);
-#endif
-            } else {
-#ifdef RGB_MATRIX_BLINK_INDEX_USB
-                wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_USB, wls_lback);
-#endif
-            }
-            break;
-        default:
-            break;
     }
 }
 

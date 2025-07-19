@@ -54,12 +54,13 @@ typedef enum {
 battery_charge_state_t get_battery_charge_state(void);
 #endif
 
-bool bt_process_record_user(uint16_t keycode, keyrecord_t *record);
-void bt_proc_long_press_keys(void);
-void open_rgb(void);
-void close_rgb(void);
-bool get_kb_sleep_flag(void);
-bool bt_rgb_matrix_indicators_user(void);
-void wl_rgb_indicator_set(uint8_t index, uint8_t status);
-void bt_housekeeping_task_user(void);
-void bt_keyboard_post_init_user(void);
+bool    bt_process_record_user(uint16_t keycode, keyrecord_t *record);
+void    bt_proc_long_press_keys(void);
+void    open_rgb(void);
+void    close_rgb(void);
+bool    get_kb_sleep_flag(void);
+bool    bt_rgb_matrix_indicators_user(void);
+void    wl_rgb_indicator_set(uint8_t index, uint8_t status);
+void    bt_housekeeping_task_user(void);
+void    bt_keyboard_post_init_user(void);
+uint8_t get_wl_rgb_indicator_s(void);

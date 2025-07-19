@@ -13,8 +13,11 @@
     },
     "features": {
         "bootmagic": true,
+        "command": false,
+        "console": false,
+        "debug": false,
         "extrakey": true,
-        "mousekey": false,
+        "mousekey": true,
         "nkro": true,
         "encoder": true,
         "rgb_matrix": true

@@ -83,6 +83,7 @@ const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
 #endif // ENCODER_MAP_ENABLE
 // clang-format on
 
+bool     ee_clr_flag = false;
 uint8_t  all_blink_cnt;
 uint32_t all_blink_time;
 uint32_t long_pressed_time;
@@ -171,6 +172,14 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             }
             return false;
 
+#ifdef CONSOLE_ENABLE
+        case KC_A:
+            if (record->event.pressed) {
+                uprintf("KL: kc: 0x%04X, col: %2u, row: %2u, pressed: %u, time: %5u, int: %u, count: %u\n", keycode, record->event.key.col, record->event.key.row, record->event.pressed, record->event.time, record->tap.interrupted, record->tap.count);
+            }
+            return false;
+#endif
+
         default:
             break;
     }
@@ -199,6 +208,10 @@ void housekeeping_task_user(void) {
         long_pressed_time = 0;
         switch (long_pressed_keycode) {
             case EE_CLR: {
+                ee_clr_flag    = true;
+                all_blink_cnt  = 6;
+                all_blink_time = timer_read32();
+                // Reset all settings
                 eeconfig_init();
                 eeconfig_update_rgb_matrix_default();
                 if (get_highest_layer(default_layer_state | layer_state) != 0) {
@@ -208,15 +221,19 @@ void housekeeping_task_user(void) {
                 // eeconfig_update_multimode_default();
                 // matrix_init_kb();
                 if (mm_eeconfig.devs != DEVS_USB && mm_eeconfig.devs != DEVS_2G4) {
+                    extern bool    rgb_matrix_blink_set_remain_time(uint8_t index, uint8_t time);
+                    extern uint8_t device_table[];
+                    rgb_matrix_blink_set_remain_time(device_table[mm_eeconfig.devs], 0x00);
                     bts_send_vendor(v_clear);
                     wait_ms(1000);
                     // wl_rgb_indicator_set(mm_eeconfig.devs, wls_lback);
-                    mm_switch_mode(mm_eeconfig.last_devs, mm_eeconfig.devs, false);
-                    // rgb_matrix_blink_set_remain_time(mm_eeconfig.devs, 0x00);
+                    // mm_switch_mode(mm_eeconfig.last_devs, mm_eeconfig.devs, false);
                 }
 #    ifdef RGB_MATRIX_BLINK_ENABLE
                 extern bool rgb_matrix_blink_set(uint8_t index);
+#        ifdef RGB_MATRIX_BLINK_INDEX_ALL
                 rgb_matrix_blink_set(RGB_MATRIX_BLINK_INDEX_ALL);
+#        endif
 #    endif
 #endif
                 keymap_config.no_gui = false;
@@ -242,7 +259,7 @@ void housekeeping_task_user(void) {
 
 #ifdef RGB_MATRIX_ENABLE
 bool rgb_matrix_indicators_user(void) {
-    // BLED related indicators, bled_task()`
+    // BLED related indicators, bled_task()
     if (!bled_rgb_matrix_indicators_user()) {
         return false;
     }
@@ -273,6 +290,11 @@ bool rgb_matrix_indicators_user(void) {
             all_blink_cnt--;
             if (!all_blink_cnt) {
                 all_blink_time = 0;
+                if (ee_clr_flag) {
+                    ee_clr_flag = false;
+                    extern uint8_t device_table[];
+                    wl_rgb_indicator_set(device_table[mm_eeconfig.devs], wls_lback);
+                }
             }
         }
         if (all_blink_cnt & 0x1) {
