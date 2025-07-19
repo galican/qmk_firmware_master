@@ -92,7 +92,7 @@ uint16_t long_pressed_keycode;
 #define set_all_led_color_white()                   \
     do {                                            \
         for (uint8_t i = 0; i < 83; i++) {          \
-            rgb_matrix_set_color(i, 100, 100, 100); \
+            rgb_matrix_set_color(i, 120, 120, 120); \
         }                                           \
     } while (0)
 #define set_all_led_off()                     \
@@ -259,10 +259,9 @@ void housekeeping_task_user(void) {
 
 #ifdef RGB_MATRIX_ENABLE
 bool rgb_matrix_indicators_user(void) {
-    // BLED related indicators, bled_task()
-    if (!bled_rgb_matrix_indicators_user()) {
-        return false;
-    }
+    // if (!bled_rgb_matrix_indicators_user()) {
+    //     return false;
+    // }
 
     // caps lock red
     if (host_keyboard_led_state().caps_lock && (mm_eeconfig.devs == DEVS_USB || bts_info.bt_info.paired)) {
@@ -292,14 +291,20 @@ bool rgb_matrix_indicators_user(void) {
                 all_blink_time = 0;
                 if (ee_clr_flag) {
                     ee_clr_flag = false;
-                    extern uint8_t device_table[];
-                    wl_rgb_indicator_set(device_table[mm_eeconfig.devs], wls_lback);
+                    if (mm_eeconfig.devs != DEVS_USB && mm_eeconfig.devs != DEVS_2G4) {
+                        extern uint8_t device_table[];
+                        wl_rgb_indicator_set(device_table[mm_eeconfig.devs], wls_lback);
+                    }
                 }
             }
         }
         if (all_blink_cnt & 0x1) {
             set_all_led_color_white();
         }
+    }
+
+    if (!bled_rgb_matrix_indicators_user()) {
+        return false;
     }
 
     return true;

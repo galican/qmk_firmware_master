@@ -177,29 +177,6 @@ void mm_task(void) {
         } else {
             bts_send_vendor(v_dis_sleep_wl);
         }
-
-        bts_send_name(DEVS_HOST1);
-        switch (mm_eeconfig.devs) {
-            case DEVS_HOST1: {
-                bts_send_vendor(v_host1);
-            } break;
-            case DEVS_HOST2: {
-                bts_send_vendor(v_host2);
-            } break;
-            case DEVS_HOST3: {
-                bts_send_vendor(v_host3);
-            } break;
-            case DEVS_2G4: {
-                bts_send_vendor(v_2g4);
-            } break;
-            default: {
-                bts_send_vendor(v_usb);
-                mm_eeconfig.devs = DEVS_USB;
-                eeconfig_update_kb(mm_eeconfig.raw);
-            } break;
-        }
-
-        // mm_switch_mode(!mm_eeconfig.devs, mm_eeconfig.devs, false);
     }
 
     static bool is_inited = false;
@@ -228,12 +205,11 @@ void mm_task(void) {
                     break;
                 case BATTERY_STATE_CHARGED_FULL:
                     bts_send_vendor(v_query_vol_full);
-                case BATTERY_STATE_UNPLUGGED:
                     break;
+                case BATTERY_STATE_UNPLUGGED:
                     bts_send_vendor(v_query_vol);
                     break;
                 default:
-                    bts_send_vendor(v_query_vol);
                     break;
             }
         }
@@ -278,8 +254,8 @@ __attribute__((weak)) void mm_switch_mode(uint8_t last_mode, uint8_t now_mode, u
     switch (mm_eeconfig.devs) {
         case DEVS_HOST1: {
             if (reset != false) {
-                // bts_send_vendor(v_host1);
-                // bts_send_name(DEVS_HOST1);
+                bts_send_vendor(v_host1);
+                bts_send_name(DEVS_HOST1);
                 bts_send_vendor(v_pair);
                 wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST1, wls_pair);
             } else if (last_mode != DEVS_HOST1) {
@@ -289,8 +265,8 @@ __attribute__((weak)) void mm_switch_mode(uint8_t last_mode, uint8_t now_mode, u
         } break;
         case DEVS_HOST2: {
             if (reset != false) {
-                // bts_send_vendor(v_host2);
-                // bts_send_name(DEVS_HOST2);
+                bts_send_vendor(v_host2);
+                bts_send_name(DEVS_HOST2);
                 bts_send_vendor(v_pair);
                 wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST2, wls_pair);
             } else if (last_mode != DEVS_HOST2) {
@@ -300,8 +276,8 @@ __attribute__((weak)) void mm_switch_mode(uint8_t last_mode, uint8_t now_mode, u
         } break;
         case DEVS_HOST3: {
             if (reset != false) {
-                // bts_send_vendor(v_host3);
-                // bts_send_name(DEVS_HOST3);
+                bts_send_vendor(v_host3);
+                bts_send_name(DEVS_HOST3);
                 bts_send_vendor(v_pair);
                 wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST3, wls_pair);
             } else if (last_mode != DEVS_HOST3) {
@@ -311,8 +287,8 @@ __attribute__((weak)) void mm_switch_mode(uint8_t last_mode, uint8_t now_mode, u
         } break;
         case DEVS_HOST4: {
             if (reset != false) {
-                // bts_send_vendor(v_host4);
-                // bts_send_name(DEVS_HOST4);
+                bts_send_vendor(v_host4);
+                bts_send_name(DEVS_HOST4);
                 bts_send_vendor(v_pair);
 #ifdef RGB_MATRIX_BLINK_INDEX_HOST4
                 wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST4, wls_pair);
@@ -326,8 +302,8 @@ __attribute__((weak)) void mm_switch_mode(uint8_t last_mode, uint8_t now_mode, u
         } break;
         case DEVS_HOST5: {
             if (reset != false) {
-                // bts_send_vendor(v_host5);
-                // bts_send_name(DEVS_HOST5);
+                bts_send_vendor(v_host5);
+                bts_send_name(DEVS_HOST5);
                 bts_send_vendor(v_pair);
 #ifdef RGB_MATRIX_BLINK_INDEX_HOST5
                 wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST5, wls_pair);
@@ -341,7 +317,7 @@ __attribute__((weak)) void mm_switch_mode(uint8_t last_mode, uint8_t now_mode, u
         } break;
         case DEVS_2G4: {
             if (reset != false) {
-                // bts_send_vendor(v_2g4);
+                bts_send_vendor(v_2g4);
                 bts_send_vendor(v_pair);
                 wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_2G4, wls_pair);
             } else if (last_mode != DEVS_2G4) {

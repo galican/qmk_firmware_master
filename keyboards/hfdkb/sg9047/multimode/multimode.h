@@ -14,7 +14,7 @@
 #include "bts_lib.h"
 
 typedef union {
-    uint16_t raw;
+    uint32_t raw;
     struct {
         uint8_t devs;
         uint8_t last_devs;

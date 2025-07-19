@@ -152,6 +152,7 @@ void bled_task(void) {
             break;
         }
         default:
+
             break;
     }
 }

@@ -78,10 +78,10 @@
         "driver": "ws2812",
         "react_on_keyup": true,
         "sleep": true,
-        "val_steps": 40,
+        "val_steps": 30,
         "speed_steps": 64,
         "hue_steps": 16,
-        "max_brightness": 160,
+        "max_brightness": 120,
         "default": {
             "speed": 128
         },
