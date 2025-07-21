@@ -37,8 +37,11 @@ RGB      single_blink_color;
 uint32_t single_blink_time;
 uint32_t long_pressed_time;
 uint16_t long_pressed_keycode;
+uint32_t GUI_pressed_time;
 
 bled_info_t bled_info = {0};
+
+#define COLOR_WHITE 0xC8, 0xC8, 0xC8
 
 #ifdef RGB_MATRIX_ENABLE
 #    include "rgb_matrix.h"
@@ -131,7 +134,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 }
                 all_blink_cnt   = 6;
                 all_blink_time  = timer_read32();
-                all_blink_color = (RGB){RGB_WHITE}; // White color
+                all_blink_color = (RGB){COLOR_WHITE}; // White color
             }
             return true;
 
@@ -141,7 +144,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 if (rgb_matrix_get_val() >= RGB_MATRIX_MAXIMUM_BRIGHTNESS) {
                     all_blink_cnt   = 6;
                     all_blink_time  = timer_read32();
-                    all_blink_color = (RGB){RGB_WHITE}; // White color
+                    all_blink_color = (RGB){COLOR_WHITE}; // White color
                 }
             }
             return false;
@@ -151,7 +154,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 if (rgb_matrix_get_val() == 0) {
                     all_blink_cnt   = 6;
                     all_blink_time  = timer_read32();
-                    all_blink_color = (RGB){RGB_WHITE}; // White color
+                    all_blink_color = (RGB){COLOR_WHITE}; // White color
                 }
             }
             return false;
@@ -161,7 +164,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 if (rgb_matrix_get_speed() >= UINT8_MAX) {
                     all_blink_cnt   = 6;
                     all_blink_time  = timer_read32();
-                    all_blink_color = (RGB){RGB_WHITE}; // White color
+                    all_blink_color = (RGB){COLOR_WHITE}; // White color
                 }
             }
             return false;
@@ -171,7 +174,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 if (rgb_matrix_get_speed() == 0) {
                     all_blink_cnt   = 6;
                     all_blink_time  = timer_read32();
-                    all_blink_color = (RGB){RGB_WHITE}; // White color
+                    all_blink_color = (RGB){COLOR_WHITE}; // White color
                 }
             }
             return false;
@@ -184,6 +187,17 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 long_pressed_time = 0;
             }
             return false;
+
+        case G(KC_TAB): {
+            if (!record->event.pressed) {
+                unregister_code(KC_TAB);
+                GUI_pressed_time = timer_read();
+            } else {
+                register_code(KC_LGUI);
+                register_code(KC_TAB);
+            }
+            return false;
+        } break;
 
         default:
             break;
@@ -249,16 +263,20 @@ void housekeeping_task_user(void) {
             case EE_CLR:
                 eeconfig_init();
                 eeconfig_update_rgb_matrix_default();
-                keymap_config.nkro   = 1;
-                keymap_config.no_gui = 0;
+                keymap_config.no_gui = false;
 
                 all_blink_cnt   = 6;
                 all_blink_time  = timer_read32();
-                all_blink_color = (RGB){RGB_WHITE}; // White color
+                all_blink_color = (RGB){0x64, 0x64, 0x64}; // White color
                 break;
             default:
                 break;
         }
+    }
+
+    if (GUI_pressed_time && (timer_elapsed(GUI_pressed_time) >= 300)) {
+        GUI_pressed_time = 0;
+        unregister_code(KC_LGUI);
     }
 }
 
@@ -344,6 +362,9 @@ void bled_task(void) {
 }
 
 void keyboard_post_init_user(void) {
+    if (keymap_config.no_gui) {
+        keymap_config.no_gui = false;
+    }
     bled_info.raw = eeconfig_read_user();
 }
 
