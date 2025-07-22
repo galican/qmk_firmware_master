@@ -154,9 +154,9 @@ void mm_init(void) {
 
     chThdCreateStatic(waThread1, sizeof(waThread1), HIGHPRIO, Thread1, NULL);
 
-    mm_init_kb();
+    mm_switch_mode(!mm_eeconfig.devs, mm_eeconfig.devs, false);
 
-    mm_mode_scan();
+    mm_init_kb();
 }
 
 void mm_task(void) {
@@ -177,12 +177,8 @@ void mm_task(void) {
         } else {
             bts_send_vendor(v_dis_sleep_wl);
         }
-    }
 
-    static bool is_inited = false;
-    if (!is_inited) {
-        is_inited = true;
-        mm_switch_mode(!mm_eeconfig.devs, mm_eeconfig.devs, false);
+        // mm_switch_mode(!mm_eeconfig.devs, mm_eeconfig.devs, false);
     }
 
     // Set led indicators
@@ -196,27 +192,13 @@ void mm_task(void) {
         }
     }
 
-    if (!bt_init_time && (timer_elapsed32(query_vol_interval_time) >= 4000)) {
+    if (!bt_init_time && !get_kb_sleep_flag() && (timer_elapsed32(query_vol_interval_time) >= 4000)) {
         query_vol_interval_time = timer_read32();
-        if (!get_kb_sleep_flag()) {
-            switch (get_battery_charge_state()) {
-                case BATTERY_STATE_CHARGING:
-                    bts_send_vendor(v_query_vol_chrg);
-                    break;
-                case BATTERY_STATE_CHARGED_FULL:
-                    bts_send_vendor(v_query_vol_full);
-                    break;
-                case BATTERY_STATE_UNPLUGGED:
-                    bts_send_vendor(v_query_vol);
-                    break;
-                default:
-                    break;
-            }
-        }
+        bts_send_vendor(v_query_vol);
     }
 
     // mode scan
-    if (!bt_init_time) mm_mode_scan();
+    mm_mode_scan();
 }
 
 __attribute__((weak)) void mm_switch_mode(uint8_t last_mode, uint8_t now_mode, uint8_t reset) {
@@ -255,8 +237,8 @@ __attribute__((weak)) void mm_switch_mode(uint8_t last_mode, uint8_t now_mode, u
         case DEVS_HOST1: {
             if (reset != false) {
                 bts_send_vendor(v_host1);
-                bts_send_name(DEVS_HOST1);
-                bts_send_vendor(v_pair);
+                // bts_send_name(DEVS_HOST1);
+                // bts_send_vendor(v_pair);
                 wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST1, wls_pair);
             } else if (last_mode != DEVS_HOST1) {
                 bts_send_vendor(v_host1);
@@ -266,8 +248,8 @@ __attribute__((weak)) void mm_switch_mode(uint8_t last_mode, uint8_t now_mode, u
         case DEVS_HOST2: {
             if (reset != false) {
                 bts_send_vendor(v_host2);
-                bts_send_name(DEVS_HOST2);
-                bts_send_vendor(v_pair);
+                // bts_send_name(DEVS_HOST2);
+                // bts_send_vendor(v_pair);
                 wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST2, wls_pair);
             } else if (last_mode != DEVS_HOST2) {
                 bts_send_vendor(v_host2);
@@ -277,8 +259,8 @@ __attribute__((weak)) void mm_switch_mode(uint8_t last_mode, uint8_t now_mode, u
         case DEVS_HOST3: {
             if (reset != false) {
                 bts_send_vendor(v_host3);
-                bts_send_name(DEVS_HOST3);
-                bts_send_vendor(v_pair);
+                // bts_send_name(DEVS_HOST3);
+                // bts_send_vendor(v_pair);
                 wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST3, wls_pair);
             } else if (last_mode != DEVS_HOST3) {
                 bts_send_vendor(v_host3);
@@ -287,8 +269,8 @@ __attribute__((weak)) void mm_switch_mode(uint8_t last_mode, uint8_t now_mode, u
         } break;
         case DEVS_HOST4: {
             if (reset != false) {
-                bts_send_vendor(v_host4);
-                bts_send_name(DEVS_HOST4);
+                // bts_send_vendor(v_host4);
+                // bts_send_name(DEVS_HOST4);
                 bts_send_vendor(v_pair);
 #ifdef RGB_MATRIX_BLINK_INDEX_HOST4
                 wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST4, wls_pair);
@@ -302,8 +284,8 @@ __attribute__((weak)) void mm_switch_mode(uint8_t last_mode, uint8_t now_mode, u
         } break;
         case DEVS_HOST5: {
             if (reset != false) {
-                bts_send_vendor(v_host5);
-                bts_send_name(DEVS_HOST5);
+                // bts_send_vendor(v_host5);
+                // bts_send_name(DEVS_HOST5);
                 bts_send_vendor(v_pair);
 #ifdef RGB_MATRIX_BLINK_INDEX_HOST5
                 wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_HOST5, wls_pair);
@@ -317,7 +299,7 @@ __attribute__((weak)) void mm_switch_mode(uint8_t last_mode, uint8_t now_mode, u
         } break;
         case DEVS_2G4: {
             if (reset != false) {
-                bts_send_vendor(v_2g4);
+                // bts_send_vendor(v_2g4);
                 bts_send_vendor(v_pair);
                 wl_rgb_indicator_set(RGB_MATRIX_BLINK_INDEX_2G4, wls_pair);
             } else if (last_mode != DEVS_2G4) {
@@ -412,31 +394,31 @@ bool process_record_multimode(uint16_t keycode, keyrecord_t *record) {
         if ((keycode > QK_MODS) && (keycode <= QK_MODS_MAX)) {
             if (QK_MODS_GET_MODS(keycode) & 0x1) {
                 if (QK_MODS_GET_MODS(keycode) & 0x10)
-                    bts_process_keys(KC_RCTL, record->event.pressed, mm_eeconfig.devs, keymap_config.no_gui, 8);
+                    bts_process_keys(KC_RCTL, record->event.pressed, mm_eeconfig.devs, keymap_config.no_gui);
                 else
-                    bts_process_keys(KC_LCTL, record->event.pressed, mm_eeconfig.devs, keymap_config.no_gui, 8);
+                    bts_process_keys(KC_LCTL, record->event.pressed, mm_eeconfig.devs, keymap_config.no_gui);
             }
             if (QK_MODS_GET_MODS(keycode) & 0x2) {
                 if (QK_MODS_GET_MODS(keycode) & 0x10)
-                    bts_process_keys(KC_RSFT, record->event.pressed, mm_eeconfig.devs, keymap_config.no_gui, 8);
+                    bts_process_keys(KC_RSFT, record->event.pressed, mm_eeconfig.devs, keymap_config.no_gui);
                 else
-                    bts_process_keys(KC_LSFT, record->event.pressed, mm_eeconfig.devs, keymap_config.no_gui, 8);
+                    bts_process_keys(KC_LSFT, record->event.pressed, mm_eeconfig.devs, keymap_config.no_gui);
             }
             if (QK_MODS_GET_MODS(keycode) & 0x4) {
                 if (QK_MODS_GET_MODS(keycode) & 0x10)
-                    bts_process_keys(KC_RALT, record->event.pressed, mm_eeconfig.devs, keymap_config.no_gui, 8);
+                    bts_process_keys(KC_RALT, record->event.pressed, mm_eeconfig.devs, keymap_config.no_gui);
                 else
-                    bts_process_keys(KC_LALT, record->event.pressed, mm_eeconfig.devs, keymap_config.no_gui, 8);
+                    bts_process_keys(KC_LALT, record->event.pressed, mm_eeconfig.devs, keymap_config.no_gui);
             }
             if (QK_MODS_GET_MODS(keycode) & 0x8) {
                 if (QK_MODS_GET_MODS(keycode) & 0x10)
-                    bts_process_keys(KC_RGUI, record->event.pressed, mm_eeconfig.devs, keymap_config.no_gui, 8);
+                    bts_process_keys(KC_RGUI, record->event.pressed, mm_eeconfig.devs, keymap_config.no_gui);
                 else
-                    bts_process_keys(KC_LGUI, record->event.pressed, mm_eeconfig.devs, keymap_config.no_gui, 8);
+                    bts_process_keys(KC_LGUI, record->event.pressed, mm_eeconfig.devs, keymap_config.no_gui);
             }
-            return bts_process_keys(QK_MODS_GET_BASIC_KEYCODE(keycode), record->event.pressed, mm_eeconfig.devs, keymap_config.no_gui, 8);
+            return bts_process_keys(QK_MODS_GET_BASIC_KEYCODE(keycode), record->event.pressed, mm_eeconfig.devs, keymap_config.no_gui);
         } else {
-            return bts_process_keys(keycode, record->event.pressed, mm_eeconfig.devs, keymap_config.no_gui, 8);
+            return bts_process_keys(keycode, record->event.pressed, mm_eeconfig.devs, keymap_config.no_gui);
         }
     }
 
@@ -450,7 +432,7 @@ extern void register_mouse(uint8_t mouse_keycode, bool pressed);
 
 __attribute__((weak)) void register_code(uint8_t code) {
     if (mm_eeconfig.devs) {
-        bts_process_keys(code, true, mm_eeconfig.devs, keymap_config.no_gui, 8);
+        bts_process_keys(code, true, mm_eeconfig.devs, keymap_config.no_gui);
     } else {
         if (code == KC_NO) {
             return;
@@ -524,7 +506,7 @@ __attribute__((weak)) void register_code(uint8_t code) {
  */
 __attribute__((weak)) void unregister_code(uint8_t code) {
     if (mm_eeconfig.devs) {
-        bts_process_keys(code, false, mm_eeconfig.devs, keymap_config.no_gui, 8);
+        bts_process_keys(code, false, mm_eeconfig.devs, keymap_config.no_gui);
     } else {
         if (code == KC_NO) {
             return;
@@ -584,7 +566,7 @@ void register_weak_mods(uint8_t mods) {
         if (mm_eeconfig.devs != DEVS_USB) {
             while (mods) {
                 uint8_t bitindex = biton(mods);
-                bts_process_keys(0xE0 + bitindex, true, mm_eeconfig.devs, keymap_config.no_gui, 8);
+                bts_process_keys(0xE0 + bitindex, true, mm_eeconfig.devs, keymap_config.no_gui);
 
                 mods &= ~(0x01 << bitindex);
             }
@@ -600,7 +582,7 @@ void unregister_weak_mods(uint8_t mods) {
         if (mm_eeconfig.devs != DEVS_USB) {
             while (mods) {
                 uint8_t bitindex = biton(mods);
-                bts_process_keys(0xE0 + bitindex, false, mm_eeconfig.devs, keymap_config.no_gui, 8);
+                bts_process_keys(0xE0 + bitindex, false, mm_eeconfig.devs, keymap_config.no_gui);
 
                 mods &= ~(0x01 << bitindex);
             }
@@ -617,29 +599,29 @@ __attribute__((weak)) void register_code16(uint16_t code) {
     if (mm_eeconfig.devs) {
         if (QK_MODS_GET_MODS(code) & 0x1) {
             if (QK_MODS_GET_MODS(code) & 0x10)
-                bts_process_keys(KC_RCTL, true, mm_eeconfig.devs, keymap_config.no_gui, 8);
+                bts_process_keys(KC_RCTL, true, mm_eeconfig.devs, keymap_config.no_gui);
             else
-                bts_process_keys(KC_LCTL, true, mm_eeconfig.devs, keymap_config.no_gui, 8);
+                bts_process_keys(KC_LCTL, true, mm_eeconfig.devs, keymap_config.no_gui);
         }
         if (QK_MODS_GET_MODS(code) & 0x2) {
             if (QK_MODS_GET_MODS(code) & 0x10)
-                bts_process_keys(KC_RSFT, true, mm_eeconfig.devs, keymap_config.no_gui, 8);
+                bts_process_keys(KC_RSFT, true, mm_eeconfig.devs, keymap_config.no_gui);
             else
-                bts_process_keys(KC_LSFT, true, mm_eeconfig.devs, keymap_config.no_gui, 8);
+                bts_process_keys(KC_LSFT, true, mm_eeconfig.devs, keymap_config.no_gui);
         }
         if (QK_MODS_GET_MODS(code) & 0x4) {
             if (QK_MODS_GET_MODS(code) & 0x10)
-                bts_process_keys(KC_RALT, true, mm_eeconfig.devs, keymap_config.no_gui, 8);
+                bts_process_keys(KC_RALT, true, mm_eeconfig.devs, keymap_config.no_gui);
             else
-                bts_process_keys(KC_LALT, true, mm_eeconfig.devs, keymap_config.no_gui, 8);
+                bts_process_keys(KC_LALT, true, mm_eeconfig.devs, keymap_config.no_gui);
         }
         if (QK_MODS_GET_MODS(code) & 0x8) {
             if (QK_MODS_GET_MODS(code) & 0x10)
-                bts_process_keys(KC_RGUI, true, mm_eeconfig.devs, keymap_config.no_gui, 8);
+                bts_process_keys(KC_RGUI, true, mm_eeconfig.devs, keymap_config.no_gui);
             else
-                bts_process_keys(KC_LGUI, true, mm_eeconfig.devs, keymap_config.no_gui, 8);
+                bts_process_keys(KC_LGUI, true, mm_eeconfig.devs, keymap_config.no_gui);
         }
-        bts_process_keys(QK_MODS_GET_BASIC_KEYCODE(code), true, mm_eeconfig.devs, keymap_config.no_gui, 8);
+        bts_process_keys(QK_MODS_GET_BASIC_KEYCODE(code), true, mm_eeconfig.devs, keymap_config.no_gui);
     } else {
         if (IS_MODIFIER_KEYCODE(code) || code == KC_NO) {
             do_code16(code, register_mods);
@@ -654,29 +636,29 @@ __attribute__((weak)) void unregister_code16(uint16_t code) {
     if (mm_eeconfig.devs) {
         if (QK_MODS_GET_MODS(code) & 0x1) {
             if (QK_MODS_GET_MODS(code) & 0x10)
-                bts_process_keys(KC_RCTL, false, mm_eeconfig.devs, keymap_config.no_gui, 8);
+                bts_process_keys(KC_RCTL, false, mm_eeconfig.devs, keymap_config.no_gui);
             else
-                bts_process_keys(KC_LCTL, false, mm_eeconfig.devs, keymap_config.no_gui, 8);
+                bts_process_keys(KC_LCTL, false, mm_eeconfig.devs, keymap_config.no_gui);
         }
         if (QK_MODS_GET_MODS(code) & 0x2) {
             if (QK_MODS_GET_MODS(code) & 0x10)
-                bts_process_keys(KC_RSFT, false, mm_eeconfig.devs, keymap_config.no_gui, 8);
+                bts_process_keys(KC_RSFT, false, mm_eeconfig.devs, keymap_config.no_gui);
             else
-                bts_process_keys(KC_LSFT, false, mm_eeconfig.devs, keymap_config.no_gui, 8);
+                bts_process_keys(KC_LSFT, false, mm_eeconfig.devs, keymap_config.no_gui);
         }
         if (QK_MODS_GET_MODS(code) & 0x4) {
             if (QK_MODS_GET_MODS(code) & 0x10)
-                bts_process_keys(KC_RALT, false, mm_eeconfig.devs, keymap_config.no_gui, 8);
+                bts_process_keys(KC_RALT, false, mm_eeconfig.devs, keymap_config.no_gui);
             else
-                bts_process_keys(KC_LALT, false, mm_eeconfig.devs, keymap_config.no_gui, 8);
+                bts_process_keys(KC_LALT, false, mm_eeconfig.devs, keymap_config.no_gui);
         }
         if (QK_MODS_GET_MODS(code) & 0x8) {
             if (QK_MODS_GET_MODS(code) & 0x10)
-                bts_process_keys(KC_RGUI, false, mm_eeconfig.devs, keymap_config.no_gui, 8);
+                bts_process_keys(KC_RGUI, false, mm_eeconfig.devs, keymap_config.no_gui);
             else
-                bts_process_keys(KC_LGUI, false, mm_eeconfig.devs, keymap_config.no_gui, 8);
+                bts_process_keys(KC_LGUI, false, mm_eeconfig.devs, keymap_config.no_gui);
         }
-        bts_process_keys(QK_MODS_GET_BASIC_KEYCODE(code), false, mm_eeconfig.devs, keymap_config.no_gui, 8);
+        bts_process_keys(QK_MODS_GET_BASIC_KEYCODE(code), false, mm_eeconfig.devs, keymap_config.no_gui);
     } else {
         unregister_code(code);
         if (IS_MODIFIER_KEYCODE(code) || code == KC_NO) {
