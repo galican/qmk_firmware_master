@@ -31,6 +31,7 @@ static bool     kb_sleep_flag = false;
 
 extern void led_config_all(void);
 extern void led_deconfig_all(void);
+extern bool led_inited;
 
 uint8_t device_table[] = {
 #    ifdef RGB_MATRIX_BLINK_INDEX_USB
@@ -39,36 +40,10 @@ uint8_t device_table[] = {
     RGB_MATRIX_BLINK_INDEX_HOST1, RGB_MATRIX_BLINK_INDEX_HOST2, RGB_MATRIX_BLINK_INDEX_HOST3, RGB_MATRIX_BLINK_INDEX_2G4,
 };
 
-bool led_inited = false;
-
-void led_config_all(void) {
-    if (!led_inited) {
-        // Set our LED pins as output
-
-        /* user code*/
-
-        // led_set(host_keyboard_leds());
-        led_inited = true;
-    }
-}
-
-void led_deconfig_all(void) {
-    if (led_inited) {
-        // Set our LED pins as input
-
-        /* user code*/
-
-        led_inited = false;
-    }
-}
-
 void open_rgb(void) {
     key_press_time = timer_read32();
     if (!sober) {
         if (bak_rgb_toggle) {
-#    ifdef RGB_DRIVER_SDB_PIN
-            writePinHigh(RGB_DRIVER_SDB_PIN);
-#    endif
             kb_sleep_flag = false;
             rgb_matrix_enable_noeeprom();
         }
@@ -91,9 +66,6 @@ void close_rgb(void) {
             sober          = false;
             close_rgb_time = timer_read32();
             rgb_matrix_disable_noeeprom();
-#    ifdef RGB_DRIVER_SDB_PIN
-            writePinLow(RGB_DRIVER_SDB_PIN);
-#    endif
         }
     } else {
         if (!rgb_matrix_config.enable) {
@@ -104,7 +76,12 @@ void close_rgb(void) {
                 }
 
                 lp_system_sleep();
-                mm_switch_mode(DEVS_USB, mm_eeconfig.last_devs, false);
+                // mm_switch_mode(!mm_eeconfig.devs, mm_eeconfig.devs, false);
+                if (mm_eeconfig.devs != DEVS_USB && mm_eeconfig.devs != DEVS_2G4) {
+                    mm_switch_mode(DEVS_USB, mm_eeconfig.last_devs, false);
+                } else if (mm_eeconfig.devs == DEVS_2G4) {
+                    mm_switch_mode(DEVS_USB, DEVS_2G4, false);
+                }
                 open_rgb();
             }
         }

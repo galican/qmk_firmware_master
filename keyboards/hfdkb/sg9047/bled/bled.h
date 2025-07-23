@@ -33,13 +33,16 @@ typedef enum {
     COLOR_COUNT,
 } bled_color_preset_t;
 
+typedef struct {
+    uint8_t bled_Brightness; // 灯效亮度值
+    uint8_t bled_speed;      // 呼吸速度
+} bled_effect_t;
+
 typedef union {
     uint32_t raw;
     struct {
-        uint8_t bled_Brightness; // 灯效亮度值
-        uint8_t bled_speed;      // 呼吸速度
-        uint8_t bled_color;      // 颜色
-        uint8_t bled_mode;       // 灯效模式
+        uint8_t bled_color; // 颜色
+        uint8_t bled_mode;  // 灯效模式
     };
 } bled_info_t;
 

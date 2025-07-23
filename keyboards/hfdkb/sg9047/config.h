@@ -86,7 +86,10 @@
 #define GUI_LOCK_LED_INDEX 81
 
 // RGB Matrix Config
-#define RGB_DRIVER_SDB_PIN D2
+#define WS2812_EN_PIN D2
 
 // Encoder Config
 #define ENCODER_DEFAULT_POS 0x0
+
+// Other Config
+#define USB_SUSPEND_CHECK_ENABLE

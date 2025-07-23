@@ -12,12 +12,14 @@
 
 #include "quantum.h"
 #include "bts_lib.h"
+#include "bled.h"
 
 typedef union {
     uint32_t raw;
     struct {
-        uint8_t devs;
-        uint8_t last_devs;
+        uint8_t       devs;
+        uint8_t       last_devs;
+        bled_effect_t bled_effect; // 灯效
     };
 } mm_eeconfig_t;
 

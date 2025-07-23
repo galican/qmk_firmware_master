@@ -157,6 +157,8 @@ void mm_init(void) {
     mm_switch_mode(!mm_eeconfig.devs, mm_eeconfig.devs, false);
 
     mm_init_kb();
+
+    mm_mode_scan();
 }
 
 void mm_task(void) {
@@ -192,7 +194,7 @@ void mm_task(void) {
         }
     }
 
-    if (!bt_init_time && !get_kb_sleep_flag() && (timer_elapsed32(query_vol_interval_time) >= 4000)) {
+    if (!bt_init_time && !get_kb_sleep_flag() && bts_info.bt_info.paired && (timer_elapsed32(query_vol_interval_time) >= 4000)) {
         query_vol_interval_time = timer_read32();
         bts_send_vendor(v_query_vol);
     }

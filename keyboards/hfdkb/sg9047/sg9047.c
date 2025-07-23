@@ -18,6 +18,7 @@
 #ifdef MULTIMODE_ENABLE
 #    include "multimode.h"
 #endif
+#include "usb_main.h"
 
 void matrix_init_kb(void) {
     static bool is_inited = false;
@@ -32,10 +33,80 @@ void matrix_init_kb(void) {
     matrix_init_user();
 }
 
+bool led_inited = false;
+
+void led_config_all(void) {
+    // Set our LED pins as output
+
+    /* user code*/
+    if (!led_inited) {
+#ifdef WS2812_EN_PIN
+        setPinOutputPushPull(WS2812_EN_PIN);
+        writePinHigh(WS2812_EN_PIN);
+#endif
+        led_inited = true;
+    }
+}
+
+void led_deconfig_all(void) {
+    // Set our LED pins as input
+
+    /* user code*/
+    if (led_inited) {
+#ifdef WS2812_EN_PIN
+        setPinOutputOpenDrain(WS2812_EN_PIN);
+        // writePinLow(WS2812_EN_PIN);
+#endif
+        led_inited = false;
+    }
+}
+
 void housekeeping_task_kb(void) {
 #ifdef MULTIMODE_ENABLE
     mm_task();
 #endif
+
+#ifdef USB_SUSPEND_CHECK_ENABLE
+    static uint32_t usb_suspend_timer = 0;
+    static uint32_t usb_suspend       = false;
+
+    if (mm_eeconfig.devs == DEVS_USB) {
+        if (USB_DRIVER.state != USB_ACTIVE) {
+            // USB挂起状态
+            if (!usb_suspend_timer) {
+                // 开始计时
+                usb_suspend_timer = timer_read32();
+            } else if (timer_elapsed32(usb_suspend_timer) > 10000) {
+                // 挂起超过10秒，关闭背光
+                if (!usb_suspend) {
+                    // 如果之前没有进入挂起状态，执行挂起操作
+                    usb_suspend = true;
+                    led_deconfig_all();
+                }
+                usb_suspend_timer = 0;
+            }
+        } else {
+            // USB活跃状态，重置计时器
+            if (usb_suspend_timer) {
+                usb_suspend_timer = 0;
+                if (usb_suspend) {
+                    // 如果之前处于挂起状态，恢复背光
+                    usb_suspend = false;
+                    led_config_all();
+                }
+            }
+        }
+    } else {
+        if (usb_suspend) {
+            usb_suspend_timer = 0;
+            usb_suspend       = false;
+            led_config_all();
+        }
+    }
+#endif
+
+    extern void housekeeping_task_bt(void);
+    housekeeping_task_bt();
 
     housekeeping_task_user();
 }
@@ -87,20 +158,14 @@ bool rgb_matrix_indicators_kb(void) {
 }
 
 void keyboard_pre_init_kb(void) {
-#ifdef RGB_DRIVER_SDB_PIN
-    setPinOutputPushPull(RGB_DRIVER_SDB_PIN);
-    writePinHigh(RGB_DRIVER_SDB_PIN);
+#ifdef WS2812_EN_PIN
+    setPinOutputPushPull(WS2812_EN_PIN);
+    writePinHigh(WS2812_EN_PIN);
 #endif
 }
 
 void suspend_power_down_kb(void) {
-#ifdef RGB_DRIVER_SDB_PIN
-    writePinLow(RGB_DRIVER_SDB_PIN);
-#endif
+    led_deconfig_all();
 }
 
-void suspend_wakeup_init_kb(void) {
-#ifdef RGB_DRIVER_SDB_PIN
-    writePinHigh(RGB_DRIVER_SDB_PIN);
-#endif
-}
+void suspend_wakeup_init_kb(void) {}
