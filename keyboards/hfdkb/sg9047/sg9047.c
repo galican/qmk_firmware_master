@@ -16,7 +16,7 @@
 
 #include QMK_KEYBOARD_H
 #ifdef MULTIMODE_ENABLE
-#    include "multimode.h"
+#    include "bt_task.h"
 #endif
 #include "usb_main.h"
 
@@ -26,7 +26,7 @@ void matrix_init_kb(void) {
     if (!is_inited) {
         is_inited = true;
 #ifdef MULTIMODE_ENABLE
-        mm_init();
+        bt_init();
 #endif
     }
 
@@ -36,9 +36,6 @@ void matrix_init_kb(void) {
 bool led_inited = false;
 
 void led_config_all(void) {
-    // Set our LED pins as output
-
-    /* user code*/
     if (!led_inited) {
 #ifdef WS2812_EN_PIN
         setPinOutputPushPull(WS2812_EN_PIN);
@@ -49,9 +46,6 @@ void led_config_all(void) {
 }
 
 void led_deconfig_all(void) {
-    // Set our LED pins as input
-
-    /* user code*/
     if (led_inited) {
 #ifdef WS2812_EN_PIN
         setPinOutputOpenDrain(WS2812_EN_PIN);
@@ -63,14 +57,14 @@ void led_deconfig_all(void) {
 
 void housekeeping_task_kb(void) {
 #ifdef MULTIMODE_ENABLE
-    mm_task();
+    bt_task();
 #endif
 
 #ifdef USB_SUSPEND_CHECK_ENABLE
     static uint32_t usb_suspend_timer = 0;
     static uint32_t usb_suspend       = false;
 
-    if (mm_eeconfig.devs == DEVS_USB) {
+    if (dev_info.devs == DEVS_USB) {
         if (USB_DRIVER.state != USB_ACTIVE) {
             // USB挂起状态
             if (!usb_suspend_timer) {
@@ -116,11 +110,6 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
         return false;
     }
 
-#ifdef MULTIMODE_ENABLE
-    if (!process_record_multimode(keycode, record)) {
-        return false;
-    }
-#endif
     switch (keycode) {
         case QK_RGB_MATRIX_TOGGLE:
             if (record->event.pressed) {

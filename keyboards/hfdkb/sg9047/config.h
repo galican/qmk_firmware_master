@@ -9,8 +9,6 @@
  */
 
 #ifdef MULTIMODE_ENABLE
-#    define CLOSE_RGB_ENABLE
-
 #    define MM_BT_HOST1_NAME "R85Ultra-1"
 #    define MM_BT_HOST2_NAME "R85Ultra-2"
 #    define MM_BT_HOST3_NAME "R85Ultra-3"
@@ -19,10 +17,8 @@
 #    define WL_LBACK_BLINK_INTERVAL (500)
 #    define WL_PAIR_TIMEOUT (30 * 1000)
 #    define WL_PAIR_BLINK_INTERVAL (200)
-#    define WL_SUCCEED_TIME (2 * 1000)
+#    define WL_SUCCEED_TIME (3 * 1000)
 #    define WL_SLEEP_TIMEOUT (5 * 60000)
-
-#    define USB_CONN_BLINK_INTERVAL (500)
 
 // Multi mode used pins
 #    define MM_CABLE_PIN B9
@@ -41,8 +37,6 @@
 #    define RGB_MATRIX_BLINK_INDEX_HOST3 24
 #    define RGB_MATRIX_BLINK_INDEX_2G4 23
 #    define RGB_MATRIX_BLINK_INDEX_USB 22
-// #    define RGB_MATRIX_BLINK_INDEX_ALL 0xFF
-#    define RGB_MATRIX_BLINK_COUNT 5
 
 // Indicate color of mm device
 #    define RGB_MATRIX_BLINK_HOST1_COLOR RGB_BLUE   // 蓝牙1指示灯颜色
@@ -52,21 +46,6 @@
 #    define RGB_MATRIX_BLINK_USB_COLOR RGB_WHITE    // USB指示灯颜色
 
 #    define BATTERY_VOL_DISPLAY_INDEX 26, 25, 24, 23, 22, 21, 20, 19, 18, 17
-
-// Helper functions
-// We don't need bled blink
-#    define CUSTOM_RGB_MATRIX_SET_ALL_COLOR
-
-#    ifdef CUSTOM_RGB_MATRIX_SET_ALL_COLOR
-#        define RGB_MATRIX_SET_ALL_COLOR(r, g, b)     \
-            do {                                      \
-                for (uint8_t i = 0; i < 83; i++) {    \
-                    rgb_matrix_set_color(i, r, g, b); \
-                }                                     \
-            } while (0)
-#    else
-#        define RGB_MATRIX_SET_ALL_COLOR(r, g, b) rgb_matrix_set_color_all(r, g, b)
-#    endif
 #endif
 
 /* SPI Config for spi flash*/

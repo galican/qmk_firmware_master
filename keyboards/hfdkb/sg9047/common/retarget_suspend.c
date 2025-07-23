@@ -17,10 +17,10 @@
 #    include "wait.h"
 
 #    include "quantum.h"
-#    include "multimode.h"
+#    include "common/bt_task.h"
 
 void housekeeping_task_bt(void) {
-    if (mm_eeconfig.devs == DEVS_USB) {
+    if (dev_info.devs == DEVS_USB) {
         if ((USB_DRIVER.state == USB_SUSPENDED) && (USB_DRIVER.saved_state == USB_ACTIVE)) {
             print("[s]");
             while (USB_DRIVER.state == USB_SUSPENDED) {
@@ -41,5 +41,4 @@ void housekeeping_task_bt(void) {
         }
     }
 }
-
 #endif

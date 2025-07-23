@@ -1,0 +1,85 @@
+/**
+ * @file bt_task.h
+ * @brief
+ * @author Joy chang.li@westberrytech.com
+ * @version 1.1.0
+ * @date 2022-10-03
+ *
+ * @copyright Copyright (c) 2022 Westberry Technology (ChangZhou) Corp., Ltd
+ */
+
+#pragma once
+
+#include "bled/bled.h"
+#include "bts_lib.h"
+
+// #define BT_DEBUG_MODE
+#define ENTRY_STOP_TIMEOUT 100 // ms
+// #define ENTRY_STOP_TIMEOUT (30 * 60000) // ms
+
+enum multimode_keycodes {
+    BT_HOST1 = BLED_KEYCODE_END,
+    BT_HOST2,
+    BT_HOST3,
+    BT_2G4,
+    BT_USB,
+    BT_VOL,
+    RGB_TEST,
+    BT_KEYCODE_END,
+};
+
+typedef union {
+    uint32_t raw;
+    struct {
+        uint8_t       devs;
+        uint8_t       last_devs;
+        bled_effect_t bled_effect; // 灯效
+    };
+} dev_info_t;
+
+dev_info_t dev_info;
+bts_info_t bts_info;
+
+#if defined(MM_BT_MODE_PIN) && defined(MM_2G4_MODE_PIN)
+typedef enum {
+    MM_MODE_USB = 0,
+    MM_MODE_BT,
+    MM_MODE_2G4,
+} mm_mode_t;
+#endif
+
+/**
+ * @brief bluetooth 初始化函数
+ * @param None
+ * @return None
+ */
+void bt_init(void);
+
+/**
+ * @brief bluetooth交互任务
+ * @param None
+ * @return None
+ */
+void bt_task(void);
+
+/**
+ * @brief 处理和BT相关的按键
+ * @param keycode: 键值
+ * @param record: 记录值
+ * @return None
+ */
+bool process_record_bt(uint16_t keycode, keyrecord_t *record);
+
+/**
+ * @brief rgb指示灯任务
+ * @param None
+ * @return None
+ */
+bool bt_indicator_rgb(void);
+
+/**
+ * @brief 切换工作模式
+ * @param None
+ * @return None
+ */
+void bt_switch_mode(uint8_t last_mode, uint8_t now_mode, uint8_t reset);
