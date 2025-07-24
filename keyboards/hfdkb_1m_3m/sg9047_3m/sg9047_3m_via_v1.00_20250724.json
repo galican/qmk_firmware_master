@@ -63,10 +63,16 @@
     ],
     "matrix": { "rows": 6, "cols": 15 },
     "customKeycodes":[
-        {"name": "BL_NEXT","title": "Cycle switching the backlight mode", "shortName":"BL_NEXT"},
+        {"name": "BL_ NEXT","title": "Cycle switching the backlight mode", "shortName":"BL_NEXT"},
         {"name": "BL_VAL","title": "Cycle adjusting the backlight brightness", "shortName":"BL_VAL"},
         {"name": "BL_SPD","title": "Cycle adjusting the backlight speed", "shortName":"BL_SPD"},
-        {"name": "BL_HUE","title": "Cycle adjusting the backlight color", "shortName":"BL_HUE"}
+        {"name": "BL_HUE","title": "Cycle adjusting the backlight color", "shortName":"BL_HUE"},
+        {"name": "BT_ HOST1","title":"BT_HOST1","shortName":"BT_HOST1"},
+        {"name": "BT_ HOST2","title":"BT_HOST2","shortName":"BT_HOST2"},
+        {"name": "BT_ HOST3","title":"BT_HOST3","shortName":"BT_HOST3"},
+        {"name": "2_4G","title":"2_4G","shortName":"2_4G"},
+        {"name": "USB","title":"USB","shortName":"USB"},
+        {"name": "BAT_ VOL","title":"Query the voltage of battery","shortName":"BAT_VOL"}
     ],
     "layouts": {
       "presets": {"Default": [0,0]},
