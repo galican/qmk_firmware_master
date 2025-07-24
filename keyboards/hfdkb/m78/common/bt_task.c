@@ -444,7 +444,7 @@ void bt_task(void) {
     static uint32_t last_time = 0;
 
     // Handle initialization sequence after delay
-    if ((bt_init_time != 0) && (timer_elapsed32(bt_init_time) >= 3000)) {
+    if ((bt_init_time != 0) && (timer_elapsed32(bt_init_time) >= 2000)) {
         bt_init_time = 0;
 
         // bts_send_vendor(v_en_sleep_bt);
@@ -529,7 +529,35 @@ bool process_record_bt(uint16_t keycode, keyrecord_t *record) {
             while (bts_is_busy()) {
                 wait_ms(1);
             }
-            retval = bts_process_keys(keycode, record->event.pressed, dev_info.devs, keymap_config.no_gui, KEY_NUM);
+            if ((keycode > QK_MODS) && (keycode <= QK_MODS_MAX)) {
+                if (QK_MODS_GET_MODS(keycode) & 0x1) {
+                    if (QK_MODS_GET_MODS(keycode) & 0x10)
+                        bts_process_keys(KC_RCTL, record->event.pressed, dev_info.devs, keymap_config.no_gui, KEY_NUM);
+                    else
+                        bts_process_keys(KC_LCTL, record->event.pressed, dev_info.devs, keymap_config.no_gui, KEY_NUM);
+                }
+                if (QK_MODS_GET_MODS(keycode) & 0x2) {
+                    if (QK_MODS_GET_MODS(keycode) & 0x10)
+                        bts_process_keys(KC_RSFT, record->event.pressed, dev_info.devs, keymap_config.no_gui, KEY_NUM);
+                    else
+                        bts_process_keys(KC_LSFT, record->event.pressed, dev_info.devs, keymap_config.no_gui, KEY_NUM);
+                }
+                if (QK_MODS_GET_MODS(keycode) & 0x4) {
+                    if (QK_MODS_GET_MODS(keycode) & 0x10)
+                        bts_process_keys(KC_RALT, record->event.pressed, dev_info.devs, keymap_config.no_gui, KEY_NUM);
+                    else
+                        bts_process_keys(KC_LALT, record->event.pressed, dev_info.devs, keymap_config.no_gui, KEY_NUM);
+                }
+                if (QK_MODS_GET_MODS(keycode) & 0x8) {
+                    if (QK_MODS_GET_MODS(keycode) & 0x10)
+                        bts_process_keys(KC_RGUI, record->event.pressed, dev_info.devs, keymap_config.no_gui, KEY_NUM);
+                    else
+                        bts_process_keys(KC_LGUI, record->event.pressed, dev_info.devs, keymap_config.no_gui, KEY_NUM);
+                }
+                retval = bts_process_keys(QK_MODS_GET_BASIC_KEYCODE(keycode), record->event.pressed, dev_info.devs, keymap_config.no_gui, KEY_NUM);
+            } else {
+                retval = bts_process_keys(keycode, record->event.pressed, dev_info.devs, keymap_config.no_gui, KEY_NUM);
+            }
         }
     }
 
@@ -596,8 +624,8 @@ void bt_switch_mode(uint8_t last_mode, uint8_t now_mode, uint8_t reset) {
             if (reset != false) {
                 indicator_status          = 1;
                 indicator_reset_last_time = true;
-                // bts_send_name(DEVS_HOST1);
-                // bts_send_vendor(v_host1);
+                bts_send_name(DEVS_HOST1);
+                bts_send_vendor(v_host1);
                 bts_send_vendor(v_pair);
             } else {
                 indicator_status          = 2;
@@ -609,8 +637,8 @@ void bt_switch_mode(uint8_t last_mode, uint8_t now_mode, uint8_t reset) {
             if (reset != false) {
                 indicator_status          = 1;
                 indicator_reset_last_time = true;
-                // bts_send_name(DEVS_HOST2);
-                // bts_send_vendor(v_host2);
+                bts_send_name(DEVS_HOST2);
+                bts_send_vendor(v_host2);
                 bts_send_vendor(v_pair);
             } else {
                 indicator_status          = 2;
@@ -622,8 +650,8 @@ void bt_switch_mode(uint8_t last_mode, uint8_t now_mode, uint8_t reset) {
             if (reset != false) {
                 indicator_status          = 1;
                 indicator_reset_last_time = true;
-                // bts_send_name(DEVS_HOST3);
-                // bts_send_vendor(v_host3);
+                bts_send_name(DEVS_HOST3);
+                bts_send_vendor(v_host3);
                 bts_send_vendor(v_pair);
             } else {
                 indicator_status          = 2;
@@ -706,7 +734,21 @@ static bool process_record_other(uint16_t keycode, keyrecord_t *record) {
 
         case BT_VOL: {
             if (record->event.pressed) {
-                bts_send_vendor(v_query_vol);
+                // bts_send_vendor(v_query_vol);
+                switch (get_battery_charge_state()) {
+                    case BATTERY_STATE_CHARGING:
+                        bts_send_vendor(v_query_vol_chrg);
+                        break;
+
+                    case BATTERY_STATE_CHARGED_FULL:
+                        bts_send_vendor(v_query_vol_full);
+                        break;
+
+                    case BATTERY_STATE_UNPLUGGED:
+                    default:
+                        bts_send_vendor(v_query_vol);
+                        break;
+                }
                 query_vol_flag = true;
             } else {
                 query_vol_flag = false;
@@ -1155,7 +1197,7 @@ static void handle_battery_query(void) {
     static uint32_t query_vol_time = 0;
 
     // Check if we should query battery (avoid querying too frequently)
-    if (!kb_sleep_flag && timer_elapsed32(query_vol_time) > 10000) {
+    if (!kb_sleep_flag && (timer_elapsed32(query_vol_time) > 4000)) {
         query_vol_time = timer_read32();
 
         // Send appropriate query command based on charge state
@@ -1169,10 +1211,13 @@ static void handle_battery_query(void) {
                 break;
 
             case BATTERY_STATE_UNPLUGGED:
+                bts_send_vendor(v_query_vol);
+                break;
             default:
                 bts_send_vendor(v_query_vol);
                 break;
         }
+        // bts_send_vendor(v_query_vol);
     }
 }
 
