@@ -31,14 +31,13 @@ enum multimode_keycodes {
 typedef union {
     uint32_t raw;
     struct {
-        uint8_t       devs;
-        uint8_t       last_devs;
-        bled_effect_t bled_effect; // 灯效
+        uint8_t devs;
+        uint8_t last_devs;
     };
 } dev_info_t;
 
-dev_info_t dev_info;
-bts_info_t bts_info;
+extern dev_info_t dev_info;
+extern bts_info_t bts_info;
 
 #if defined(MM_BT_MODE_PIN) && defined(MM_2G4_MODE_PIN)
 typedef enum {

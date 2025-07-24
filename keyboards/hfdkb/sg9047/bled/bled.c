@@ -33,23 +33,23 @@ bool bled_process_record_user(uint16_t keycode, keyrecord_t *record) {
 
         case BLED_Brightness:
             if (record->event.pressed) {
-                if (dev_info.bled_effect.bled_Brightness >= RGB_MATRIX_MAXIMUM_BRIGHTNESS) {
-                    dev_info.bled_effect.bled_Brightness = 0;
+                if (bled_info.bled_Brightness >= RGB_MATRIX_MAXIMUM_BRIGHTNESS) {
+                    bled_info.bled_Brightness = 0;
                 } else {
-                    dev_info.bled_effect.bled_Brightness += RGB_MATRIX_VAL_STEP;
+                    bled_info.bled_Brightness += RGB_MATRIX_VAL_STEP;
                 }
-                eeconfig_update_kb(dev_info.raw);
+                eeconfig_update_kb(bled_info.raw);
             }
             return false;
 
         case BLED_Speed:
             if (record->event.pressed) {
-                if (dev_info.bled_effect.bled_speed >= UINT8_MAX) { // UINT8_MAX = 255
-                    dev_info.bled_effect.bled_speed = 0;
+                if (bled_info.bled_speed >= UINT8_MAX) { // UINT8_MAX = 255
+                    bled_info.bled_speed = 0;
                 } else {
-                    dev_info.bled_effect.bled_speed = qadd8(dev_info.bled_effect.bled_speed, RGB_MATRIX_SPD_STEP);
+                    bled_info.bled_speed = qadd8(bled_info.bled_speed, RGB_MATRIX_SPD_STEP);
                 }
-                eeconfig_update_kb(dev_info.raw);
+                eeconfig_update_kb(bled_info.raw);
             }
             return false;
 
@@ -61,7 +61,7 @@ bool bled_process_record_user(uint16_t keycode, keyrecord_t *record) {
                         bled_info.bled_color = COLOR_RAINBOW;
                     }
                 }
-                eeconfig_update_user(bled_info.raw);
+                eeconfig_update_kb(bled_info.raw);
             }
             return false;
 
@@ -81,9 +81,9 @@ bool bled_rgb_matrix_indicators_user(void) {
 void bled_task(void) {
     switch (bled_info.bled_mode) {
         case BLED_MODE_CYCLE: {
-            uint8_t time = scale16by8(g_rgb_timer, qadd8(dev_info.bled_effect.bled_speed / 4, 1));
+            uint8_t time = scale16by8(g_rgb_timer, qadd8(bled_info.bled_speed / 4, 1));
             for (uint8_t i = 83; i < 115; i++) {
-                HSV hsv = {g_led_config.point[i].x - time, 255, dev_info.bled_effect.bled_Brightness};
+                HSV hsv = {g_led_config.point[i].x - time, 255, bled_info.bled_Brightness};
                 RGB rgb = hsv_to_rgb(hsv);
                 rgb_matrix_set_color(i, rgb.r, rgb.g, rgb.b);
             }
@@ -91,8 +91,8 @@ void bled_task(void) {
         }
         case BLED_MODE_NEON: {
             // Option 1: Slow rainbow cycling (classic neon)
-            uint8_t time = scale16by8(g_rgb_timer, qadd8(dev_info.bled_effect.bled_speed / 8, 1));
-            HSV     hsv  = {time, 255, dev_info.bled_effect.bled_Brightness};
+            uint8_t time = scale16by8(g_rgb_timer, qadd8(bled_info.bled_speed / 8, 1));
+            HSV     hsv  = {time, 255, bled_info.bled_Brightness};
             RGB     rgb  = hsv_to_rgb(hsv);
             for (uint8_t i = 83; i < 115; i++) {
                 rgb_matrix_set_color(i, rgb.r, rgb.g, rgb.b);
@@ -103,7 +103,7 @@ void bled_task(void) {
             if (bled_info.bled_color == COLOR_RAINBOW) {
                 // Rainbow
                 for (uint8_t i = 83; i < 115; i++) {
-                    HSV hsv = {(i - 83) * 8, 255, dev_info.bled_effect.bled_Brightness};
+                    HSV hsv = {(i - 83) * 8, 255, bled_info.bled_Brightness};
                     RGB rgb = hsv_to_rgb(hsv);
                     rgb_matrix_set_color(i, rgb.r, rgb.g, rgb.b);
                 }
@@ -111,7 +111,7 @@ void bled_task(void) {
                 HSV hsv;
                 hsv.h   = color_table[bled_info.bled_color][0];
                 hsv.s   = color_table[bled_info.bled_color][1];
-                hsv.v   = dev_info.bled_effect.bled_Brightness;
+                hsv.v   = bled_info.bled_Brightness;
                 RGB rgb = hsv_to_rgb(hsv);
                 for (uint8_t i = 83; i < 115; i++) {
                     rgb_matrix_set_color(i, rgb.r, rgb.g, rgb.b);
@@ -122,8 +122,8 @@ void bled_task(void) {
         case BLED_MODE_BREATHING: {
             if (bled_info.bled_color == COLOR_RAINBOW) {
                 // Rainbow breathing effect
-                uint8_t time       = scale16by8(g_rgb_timer, qadd8(dev_info.bled_effect.bled_speed / 4, 1));
-                uint8_t brightness = scale8(abs8(sin8(time / 2) - 128) * 2, dev_info.bled_effect.bled_Brightness);
+                uint8_t time       = scale16by8(g_rgb_timer, qadd8(bled_info.bled_speed / 4, 1));
+                uint8_t brightness = scale8(abs8(sin8(time / 2) - 128) * 2, bled_info.bled_Brightness);
                 for (uint8_t i = 83; i < 115; i++) {
                     HSV hsv = {(i - 83) * 8, 255, brightness};
                     RGB rgb = hsv_to_rgb(hsv);
@@ -133,8 +133,8 @@ void bled_task(void) {
                 HSV hsv;
                 hsv.h              = color_table[bled_info.bled_color][0];
                 hsv.s              = color_table[bled_info.bled_color][1];
-                uint8_t time       = scale16by8(g_rgb_timer, qadd8(dev_info.bled_effect.bled_speed / 4, 1));
-                uint8_t brightness = scale8(abs8(sin8(time / 2) - 128) * 2, dev_info.bled_effect.bled_Brightness);
+                uint8_t time       = scale16by8(g_rgb_timer, qadd8(bled_info.bled_speed / 4, 1));
+                uint8_t brightness = scale8(abs8(sin8(time / 2) - 128) * 2, bled_info.bled_Brightness);
                 // Set brightness based on breathing effect
                 hsv.v   = brightness;
                 RGB rgb = hsv_to_rgb(hsv);
@@ -157,14 +157,13 @@ void bled_task(void) {
 }
 
 void bled_keyboard_post_init_user(void) {
-    bled_info.raw = eeconfig_read_user();
+    bled_info.raw = eeconfig_read_kb();
 }
 
 void bled_eeconfig_init_user(void) {
-    bled_info.bled_mode  = BLED_MODE_CYCLE;
-    bled_info.bled_color = COLOR_RAINBOW;
-    eeconfig_update_user(bled_info.raw);
-    dev_info.bled_effect.bled_Brightness = RGB_MATRIX_DEFAULT_VAL;
-    dev_info.bled_effect.bled_speed      = RGB_MATRIX_DEFAULT_SPD;
-    eeconfig_update_kb(dev_info.raw);
+    bled_info.bled_mode       = BLED_MODE_CYCLE;
+    bled_info.bled_color      = COLOR_RAINBOW;
+    bled_info.bled_Brightness = RGB_MATRIX_DEFAULT_VAL;
+    bled_info.bled_speed      = RGB_MATRIX_DEFAULT_SPD;
+    eeconfig_update_kb(bled_info.raw);
 }

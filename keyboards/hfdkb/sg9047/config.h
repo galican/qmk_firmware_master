@@ -23,12 +23,8 @@
 // Multi mode used pins
 #    define MM_CABLE_PIN B9
 #    define MM_CHARGE_PIN B8
-
 #    define MM_BT_MODE_PIN C0
 #    define MM_2G4_MODE_PIN B11
-
-#    define MM_USB_EN_PIN A14
-#    define MM_USB_EN_STATE 0
 
 // Indicate index of mm device
 #    define MATRIX_LONG_PRESS

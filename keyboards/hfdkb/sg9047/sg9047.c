@@ -156,5 +156,3 @@ void keyboard_pre_init_kb(void) {
 void suspend_power_down_kb(void) {
     led_deconfig_all();
 }
-
-void suspend_wakeup_init_kb(void) {}
