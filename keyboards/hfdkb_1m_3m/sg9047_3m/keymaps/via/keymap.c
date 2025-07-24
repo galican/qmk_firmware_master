@@ -214,6 +214,13 @@ bool rgb_matrix_indicators_user(void) {
         rgb_matrix_set_color(GUI_LOCK_LED_INDEX, RGB_WHITE);
     }
 
+    // Bluetooth related indicators
+#    ifdef MULTIMODE_ENABLE
+    if (!bt_indicator_rgb()) {
+        return false;
+    }
+#    endif
+
     // All LEDs blink
     if (all_blink_cnt && all_blink_time) {
         // Turn off all LEDs before blinking
@@ -229,13 +236,6 @@ bool rgb_matrix_indicators_user(void) {
             set_all_led_color_white();
         }
     }
-
-    // Bluetooth related indicators
-#    ifdef MULTIMODE_ENABLE
-    if (!bt_indicator_rgb()) {
-        return false;
-    }
-#    endif
 
     return true;
 }

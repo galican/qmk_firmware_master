@@ -61,8 +61,8 @@ static void led_deconfig_all(void);
 #define USB_CONN_BLINK_COUNT 20          // USB blink count when connected
 
 /* Sleep and standby timeouts */
-#define LED_OFF_STANDBY_TIMEOUT_MS (30 * 60 * 1000) // 30 minutes
-#define ENTRY_SLEEP_TIMEOUT_MS (30 * 60 * 1000)     // 30 minutes
+#define LED_OFF_STANDBY_TIMEOUT_MS (5 * 60 * 1000) // 5 minutes
+#define ENTRY_SLEEP_TIMEOUT_MS (30 * 60 * 1000)    // 30 minutes
 
 /* Array size calculations */
 #define NUM_LONG_PRESS_KEYS (sizeof(long_pressed_keys) / sizeof(long_pressed_keys_t))
@@ -107,6 +107,8 @@ static indicator_state_t indicator_status = INDICATOR_CONNECTING;
 
 extern keymap_config_t keymap_config;
 
+extern bool low_vol_offed_sleep;
+
 uint32_t   bt_init_time = 0;
 dev_info_t dev_info     = {0};
 bts_info_t bts_info     = {
@@ -140,7 +142,7 @@ static bool led_inited      = false;
 static bool rgb_status_save = false;
 static bool bak_rgb_toggle  = false;
 static bool sober           = true;
-bool        kb_sleep_flag   = false;
+static bool kb_sleep_flag   = false;
 
 // 设备指示配置
 static const uint8_t rgb_index_table[] = {MM_BLINK_USB_INDEX, MM_BLINK_HOST1_INDEX, MM_BLINK_HOST2_INDEX, MM_BLINK_HOST3_INDEX, MM_BLINK_2G4_INDEX};
@@ -898,6 +900,10 @@ static void close_rgb(void) {
             sober          = false;
             close_rgb_time = timer_read32();
             rgb_matrix_disable_noeeprom();
+
+#ifdef RGB_MATRIX_SHUTDOWN_PIN
+            setPinOutputOpenDrain(RGB_MATRIX_SHUTDOWN_PIN);
+#endif
         }
     } else {
         if (!rgb_matrix_config.enable) {
@@ -921,8 +927,14 @@ static void open_rgb(void) {
     key_press_time = timer_read32();
     if (!sober) {
         if (bak_rgb_toggle) {
-            kb_sleep_flag = false;
+            kb_sleep_flag       = false;
+            low_vol_offed_sleep = false;
             rgb_matrix_enable_noeeprom();
+
+#ifdef RGB_MATRIX_SHUTDOWN_PIN
+            setPinOutputPushPull(RGB_MATRIX_SHUTDOWN_PIN);
+            writePinHigh(RGB_MATRIX_SHUTDOWN_PIN);
+#endif
         }
         if (!led_inited) {
             led_config_all();
@@ -1133,7 +1145,6 @@ static void bt_charging_indication(void) {
 }
 
 static void bt_bat_low_level_shutdown(void) {
-    extern bool low_vol_offed_sleep;
     if (bts_info.bt_info.low_vol_offed) {
         kb_sleep_flag       = true;
         low_vol_offed_sleep = true;
