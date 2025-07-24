@@ -45,6 +45,10 @@ bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
 }
 
 bool rgb_matrix_indicators_kb(void) {
+    if (!rgb_matrix_get_flags()) {
+        rgb_matrix_set_color_all(RGB_OFF);
+    }
+
     if (!rgb_matrix_indicators_user()) {
         return false;
     }
@@ -53,14 +57,16 @@ bool rgb_matrix_indicators_kb(void) {
 }
 
 void keyboard_pre_init_kb(void) {
+#ifdef RGB_MATRIX_SHUTDOWN_PIN
     setPinOutputPushPull(RGB_MATRIX_SHUTDOWN_PIN);
     writePinHigh(RGB_MATRIX_SHUTDOWN_PIN);
+#endif
+
+    keyboard_pre_init_user();
 }
 
 void suspend_power_down_kb(void) {
-    writePinLow(RGB_MATRIX_SHUTDOWN_PIN);
-}
-
-void suspend_wakeup_init_kb(void) {
-    writePinHigh(RGB_MATRIX_SHUTDOWN_PIN);
+#ifdef RGB_MATRIX_SHUTDOWN_PIN
+    setPinOutputOpenDrain(RGB_MATRIX_SHUTDOWN_PIN);
+#endif
 }

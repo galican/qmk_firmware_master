@@ -4,6 +4,8 @@
 #endif
 #include "lib/lib8tion/lib8tion.h"
 
+static void bled_task(void);
+
 // Color table for fixed color modes
 // clang-format off
 const uint8_t color_table[COLOR_COUNT][3] = {
@@ -80,7 +82,7 @@ bool bled_rgb_matrix_indicators_user(void) {
     return true;
 }
 
-void bled_task(void) {
+static void bled_task(void) {
     switch (bled_info.bled_mode) {
         case BLED_MODE_CYCLE: {
             uint8_t time = scale16by8(g_rgb_timer, qadd8(bled_info.bled_speed / 4, 1));

@@ -16,6 +16,39 @@
 
 #pragma once
 
+#ifdef MULTIMODE_ENABLE
+#    define MM_BT_HOST1_NAME "R85Ultra-1"
+#    define MM_BT_HOST2_NAME "R85Ultra-2"
+#    define MM_BT_HOST3_NAME "R85Ultra-3"
+
+// Indicate index of mm device
+#    define MM_BLINK_HOST1_INDEX 26
+#    define MM_BLINK_HOST2_INDEX 25
+#    define MM_BLINK_HOST3_INDEX 24
+#    define MM_BLINK_2G4_INDEX 23
+#    define MM_BLINK_USB_INDEX 22
+
+// Multi mode used pins
+#    define MM_CABLE_PIN B9
+#    define MM_CHARGE_PIN B8
+#    define MM_BT_MODE_PIN C0
+#    define MM_2G4_MODE_PIN B11
+
+// Indicate color of mm device
+#    define MM_BLINK_HOST1_COLOR RGB_BLUE   // 蓝牙1指示灯颜色
+#    define MM_BLINK_HOST2_COLOR RGB_CYAN   // 蓝牙2指示灯颜色
+#    define MM_BLINK_HOST3_COLOR RGB_PURPLE // 蓝牙3指示灯颜色
+#    define MM_BLINK_2G4_COLOR RGB_GREEN    // 2.4G指示灯颜色
+#    define MM_BLINK_USB_COLOR RGB_WHITE    // USB指示灯颜色
+
+#    define BAT_LEVEL_DISPLAY_INDEX {26, 25, 24, 23, 22, 21, 20, 19, 18, 17} // 电量显示LED
+
+// Other config
+#    define USB_SUSPEND_CHECK_ENABLE
+#    define CHRGE_LOW_LEVEL_INDICATOR_INDEX 74
+#    define CHRGE_LOW_LEVEL_INDICATOR_COLOR RGB_RED
+#endif
+
 /* SPI Config for spi flash*/
 #define SPI_DRIVER SPIDQ
 #define SPI_SCK_PIN B3

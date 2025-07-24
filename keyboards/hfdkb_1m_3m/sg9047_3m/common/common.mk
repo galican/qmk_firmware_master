@@ -1,7 +1,7 @@
 THIS_MK_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 COMMON_DIR := $(THIS_MK_DIR)
 
-# MULTIMODE_ENABLE ?= yes
+MULTIMODE_ENABLE ?= yes
 ifeq ($(strip $(MULTIMODE_ENABLE)), yes)
     OPT_DEFS += -DMULTIMODE_ENABLE
     OPT_DEFS += -DENTRY_STOP_MODE

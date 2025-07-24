@@ -11,16 +11,16 @@ enum custom_keycodes {
     BLED_KEYCODE_END,
 };
 
-enum multimode_keycodes {
-    BT_HOST1 = BLED_KEYCODE_END,
-    BT_HOST2,
-    BT_HOST3,
-    BT_2G4,
-    BT_USB,
-    BT_VOL,
-    RGB_TEST,
-    BT_KEYCODE_END,
-};
+// enum multimode_keycodes {
+//     BT_HOST1 = BLED_KEYCODE_END,
+//     BT_HOST2,
+//     BT_HOST3,
+//     BT_2G4,
+//     BT_USB,
+//     BT_VOL,
+//     RGB_TEST,
+//     BT_KEYCODE_END,
+// };
 
 typedef enum {
     BLED_MODE_CYCLE,
@@ -54,6 +54,9 @@ typedef union {
     };
 } bled_info_t;
 
-void bled_task(void);
+bool bled_rgb_matrix_indicators_user(void);
+bool bled_process_record_user(uint16_t keycode, keyrecord_t *record);
+void bled_keyboard_post_init_user(void);
+void bled_eeconfig_init_user(void);
 
 #endif // BLED_H
