@@ -1,85 +1,28 @@
 #include "bled.h"
 #include "lib/lib8tion/lib8tion.h"
 
-#define n_rgb_matrix_set_color_all(r, g, b)   \
-    do {                                      \
-        for (uint8_t i = 0; i <= 82; i++) {   \
-            rgb_matrix_set_color(i, r, g, b); \
-        }                                     \
-    } while (0)
-#define n_rgb_matrix_off_all()                \
-    do {                                      \
-        for (uint8_t i = 0; i <= 82; i++) {   \
-            rgb_matrix_set_color(i, 0, 0, 0); \
-        }                                     \
-    } while (0)
+static void bled_task(void);
+
+#define BLED_VAL_STEP 64
 
 // Color table for fixed color modes
 // clang-format off
-const uint8_t color_table[COLOR_COUNT][3] = {
-    [COLOR_RED]    = {0,   255, 160},
-    [COLOR_ORANGE] = {21,  255, 160},
-    [COLOR_YELLOW] = {43,  255, 160},
-    [COLOR_GREEN]  = {85,  255, 160},
-    [COLOR_CYAN]   = {128, 255, 160},
-    [COLOR_BLUE]   = {170, 255, 160},
-    [COLOR_PURPLE] = {191, 255, 160},
-    [COLOR_WHITE]  = {0, 0, 160},
+const uint8_t hsv_table[COLOR_COUNT][3] = {
+    {HSV_RED},
+    {HSV_ORANGE},
+    {HSV_YELLOW},
+    {HSV_GREEN},
+    {HSV_CYAN},
+    {HSV_BLUE},
+    {HSV_PURPLE},
+    {HSV_WHITE},
 };
 // clang-format on
 
-uint8_t  all_blink_cnt;
-uint32_t all_blink_time;
-RGB      all_blink_color;
-uint8_t  single_blink_cnt;
-uint8_t  single_blink_index;
-RGB      single_blink_color;
-uint32_t single_blink_time;
-uint32_t long_pressed_time;
-uint16_t long_pressed_keycode;
-uint32_t GUI_pressed_time;
-
 bled_info_t bled_info = {0};
 
-#define COLOR_WHITE 0xC8, 0xC8, 0xC8
-
-#ifdef RGB_MATRIX_ENABLE
-#    include "rgb_matrix.h"
-#    define __ NO_LED
-// clang-format off
-// __attribute__((weak)) led_config_t g_led_config = {
-//     {
-//         { 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, __, __},
-//         {27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13},
-//         {28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42},
-//         {56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, __, 44, 43},
-//         {57, __, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, __},
-//         {82, 81, 80, __, __, __, 77, __, __, __, 74, 73, 72, 71, 70},
-//     },
-//     {
-//         {0, 0},    {19, 0},   {34, 0},   {49, 0},   {63, 0},   {82, 0},   {97, 0},   {112, 0},  {127, 0},  {146, 0},  {160, 0},  {175, 0},  {190, 0},
-//         {224, 15}, {201, 15}, {179, 15}, {164, 15}, {149, 15}, {134, 15}, {119, 15}, {105, 15}, {90, 15},  {75, 15},  {60, 15},  {45, 15},  {30, 15},  {15, 15},  {0, 15},
-//         {4, 27},   {22, 27},  {37, 27},  {52, 27},  {67, 27},  {82, 27},  {97, 27},  {112, 27}, {127, 27}, {142, 27}, {157, 27}, {172, 27}, {187, 27}, {205, 27}, {224, 27},
-//         {224, 40}, {200, 40}, {175, 40}, {161, 40}, {146, 40}, {131, 40}, {116, 40}, {101, 40}, {86, 40},  {71, 40},  {56, 40},  {41, 40},  {26, 40},  {6, 40},
-//         {9, 52},   {34, 52},  {49, 52},  {63, 52},  {78, 52},  {93, 52},  {108, 52}, {123, 52}, {138, 52}, {153, 52}, {168, 52}, {188, 52}, {209, 52},
-//         {224, 64}, {209, 64}, {194, 64}, {170, 64}, {151, 64}, {115, 64}, {105, 64}, {95, 64},  {85, 64},  {75, 64},  {39, 64},  {21, 64},  {2, 64},
-//         {7, 0},    {14, 0},   {21, 0},   {28, 0},   {35, 0},   {42, 0},   {49, 0},   {56, 0},   {63, 0},   {70, 0},   {77, 0},   {84, 0},   {91, 0},   {98, 0},   {105, 0},  {112, 0},
-//         {119, 0},  {126, 0},  {133, 0},  {140, 0},  {147, 0},  {154, 0},  {161, 0},  {168, 0},  {175, 0},  {182, 0},  {189, 0},  {196, 0},  {203, 0},  {210, 0},  {217, 0},  {224, 0}
-//     },
-//     {
-//         4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-//         4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-//         4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-//         4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,    4, 4,
-//         4,    8, 1, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-//         1, 4, 4, 4, 4, 1, 1, 2, 2, 4, 2, 2, 1, 8, 1,
-//         2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-//         2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2
-//     },
-// };
-#endif
 // clang-format on
-bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+bool bled_process_record_user(uint16_t keycode, keyrecord_t *record) {
     switch (keycode) {
         case BLED_Mode:
             if (record->event.pressed) {
@@ -93,10 +36,10 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
         case BLED_Brightness:
             if (record->event.pressed) {
-                if (bled_info.bled_Brightness >= RGB_MATRIX_MAXIMUM_BRIGHTNESS) {
+                if (bled_info.bled_Brightness >= UINT8_MAX) {
                     bled_info.bled_Brightness = 0;
                 } else {
-                    bled_info.bled_Brightness += RGB_MATRIX_VAL_STEP;
+                    bled_info.bled_Brightness = qadd8(bled_info.bled_Brightness, BLED_VAL_STEP);
                 }
                 eeconfig_update_user(bled_info.raw);
             }
@@ -125,80 +68,6 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             }
             return false;
 
-        case PDF(0):
-        case PDF(2):
-            if (record->event.pressed) {
-                if (get_highest_layer(default_layer_state) == 0) {
-                    keymap_config.no_gui = false;
-                    eeconfig_update_keymap(&keymap_config);
-                }
-                all_blink_cnt   = 6;
-                all_blink_time  = timer_read32();
-                all_blink_color = (RGB){COLOR_WHITE}; // White color
-            }
-            return true;
-
-        case RM_VALU:
-            if (record->event.pressed) {
-                rgb_matrix_increase_val();
-                if (rgb_matrix_get_val() >= RGB_MATRIX_MAXIMUM_BRIGHTNESS) {
-                    all_blink_cnt   = 6;
-                    all_blink_time  = timer_read32();
-                    all_blink_color = (RGB){COLOR_WHITE}; // White color
-                }
-            }
-            return false;
-        case RM_VALD:
-            if (record->event.pressed) {
-                rgb_matrix_decrease_val();
-                if (rgb_matrix_get_val() == 0) {
-                    all_blink_cnt   = 6;
-                    all_blink_time  = timer_read32();
-                    all_blink_color = (RGB){COLOR_WHITE}; // White color
-                }
-            }
-            return false;
-        case RM_SPDU:
-            if (record->event.pressed) {
-                rgb_matrix_increase_speed();
-                if (rgb_matrix_get_speed() >= UINT8_MAX) {
-                    all_blink_cnt   = 6;
-                    all_blink_time  = timer_read32();
-                    all_blink_color = (RGB){COLOR_WHITE}; // White color
-                }
-            }
-            return false;
-        case RM_SPDD:
-            if (record->event.pressed) {
-                rgb_matrix_decrease_speed();
-                if (rgb_matrix_get_speed() == 0) {
-                    all_blink_cnt   = 6;
-                    all_blink_time  = timer_read32();
-                    all_blink_color = (RGB){COLOR_WHITE}; // White color
-                }
-            }
-            return false;
-
-        case EE_CLR:
-            if (record->event.pressed) {
-                long_pressed_time    = timer_read32();
-                long_pressed_keycode = EE_CLR;
-            } else {
-                long_pressed_time = 0;
-            }
-            return false;
-
-        case G(KC_TAB): {
-            if (!record->event.pressed) {
-                unregister_code(KC_TAB);
-                GUI_pressed_time = timer_read();
-            } else {
-                register_code(KC_LGUI);
-                register_code(KC_TAB);
-            }
-            return false;
-        } break;
-
         default:
             break;
     }
@@ -206,81 +75,13 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     return true;
 }
 
-bool rgb_matrix_indicators_user(void) {
-    // caps lock red
-    if (host_keyboard_led_state().caps_lock) {
-        rgb_matrix_set_color(CAPS_LOCK_LED_INDEX, RGB_WHITE);
-    } else {
-        if (!rgb_matrix_get_flags()) {
-            rgb_matrix_set_color(CAPS_LOCK_LED_INDEX, RGB_OFF);
-        }
-    }
-
-    // GUI lock white
-    if (keymap_config.no_gui) {
-        rgb_matrix_set_color(GUI_LOCK_LED_INDEX, RGB_WHITE);
-    } else {
-        if (!rgb_matrix_get_flags()) {
-            rgb_matrix_set_color(GUI_LOCK_LED_INDEX, RGB_OFF);
-        }
-    }
-
-    // 全键闪烁
-    if (all_blink_cnt) {
-        // Turn off all LEDs before blinking
-        n_rgb_matrix_off_all();
-        if (timer_elapsed32(all_blink_time) > 300) {
-            all_blink_time = timer_read32();
-            all_blink_cnt--;
-        }
-        if (all_blink_cnt & 0x1) {
-            n_rgb_matrix_set_color_all(all_blink_color.r, all_blink_color.g, all_blink_color.b);
-        }
-    }
-
-    // 单键闪烁
-    if (single_blink_cnt) {
-        if (timer_elapsed32(single_blink_time) > 300) {
-            single_blink_time = timer_read32();
-            single_blink_cnt--;
-        }
-        if (single_blink_cnt % 2) {
-            rgb_matrix_set_color(single_blink_index, single_blink_color.r, single_blink_color.g, single_blink_color.b);
-        } else {
-            rgb_matrix_set_color(single_blink_index, RGB_OFF);
-        }
-    }
-
+bool bled_rgb_matrix_indicators_user(void) {
     bled_task();
 
     return true;
 }
 
-void housekeeping_task_user(void) {
-    if ((timer_elapsed32(long_pressed_time) > 3000) && (long_pressed_time)) {
-        long_pressed_time = 0;
-        switch (long_pressed_keycode) {
-            case EE_CLR:
-                eeconfig_init();
-                eeconfig_update_rgb_matrix_default();
-                keymap_config.no_gui = false;
-
-                all_blink_cnt   = 6;
-                all_blink_time  = timer_read32();
-                all_blink_color = (RGB){0x64, 0x64, 0x64}; // White color
-                break;
-            default:
-                break;
-        }
-    }
-
-    if (GUI_pressed_time && (timer_elapsed(GUI_pressed_time) >= 300)) {
-        GUI_pressed_time = 0;
-        unregister_code(KC_LGUI);
-    }
-}
-
-void bled_task(void) {
+static void bled_task(void) {
     switch (bled_info.bled_mode) {
         case BLED_MODE_CYCLE: {
             uint8_t time = scale16by8(g_rgb_timer, qadd8(bled_info.bled_speed / 4, 1));
@@ -291,6 +92,7 @@ void bled_task(void) {
             }
             break;
         }
+
         case BLED_MODE_NEON: {
             // Option 1: Slow rainbow cycling (classic neon)
             uint8_t time = scale16by8(g_rgb_timer, qadd8(bled_info.bled_speed / 8, 1));
@@ -301,6 +103,7 @@ void bled_task(void) {
             }
             break;
         }
+
         case BLED_MODE_SOLID: {
             if (bled_info.bled_color == COLOR_RAINBOW) {
                 // Rainbow
@@ -311,8 +114,8 @@ void bled_task(void) {
                 }
             } else {
                 HSV hsv;
-                hsv.h   = color_table[bled_info.bled_color][0];
-                hsv.s   = color_table[bled_info.bled_color][1];
+                hsv.h   = hsv_table[bled_info.bled_color - 1][0];
+                hsv.s   = hsv_table[bled_info.bled_color - 1][1];
                 hsv.v   = bled_info.bled_Brightness;
                 RGB rgb = hsv_to_rgb(hsv);
                 for (uint8_t i = 83; i < 115; i++) {
@@ -321,6 +124,7 @@ void bled_task(void) {
             }
             break;
         }
+
         case BLED_MODE_BREATHING: {
             if (bled_info.bled_color == COLOR_RAINBOW) {
                 // Rainbow breathing effect
@@ -335,8 +139,8 @@ void bled_task(void) {
                 }
             } else {
                 HSV hsv;
-                hsv.h              = color_table[bled_info.bled_color][0];
-                hsv.s              = color_table[bled_info.bled_color][1];
+                hsv.h              = hsv_table[bled_info.bled_color - 1][0];
+                hsv.s              = hsv_table[bled_info.bled_color - 1][1];
                 uint8_t time       = scale16by8(g_rgb_timer, qadd8(bled_info.bled_speed / 4, 1));
                 uint8_t brightness = scale8(abs8(sin8(time / 2) - 128) * 2, bled_info.bled_Brightness);
                 // uint16_t time = scale16by8(g_rgb_timer, bled_info.bled_speed / 8);
@@ -350,27 +154,81 @@ void bled_task(void) {
             }
             break; // Added missing break statement!
         }
+
         case BLED_MODE_OFF: {
             for (uint8_t i = 83; i < 115; i++) {
                 rgb_matrix_set_color(i, RGB_OFF);
             }
             break;
         }
+
+        case BLED_MODE_MARQUEE: {
+// Marquee effect with configurable group size
+#define MARQUEE_GROUP_SIZE 5 // Number of LEDs in each group
+#define MARQUEE_LED_COUNT 32 // Total LEDs (115 - 83 = 32)
+
+            uint8_t time         = scale16by8(g_rgb_timer, qadd8(bled_info.bled_speed / 8, 1));
+            uint8_t cycle_length = MARQUEE_LED_COUNT * 2; // Simplified: just LED count * 2
+            uint8_t position     = time % cycle_length;
+
+            // Determine if we're going forward or backward
+            bool    going_forward = position < MARQUEE_LED_COUNT;
+            uint8_t led_pos;
+
+            if (going_forward) {
+                led_pos = position;
+            } else {
+                led_pos = (MARQUEE_LED_COUNT * 2 - 1) - position; // Proper reverse calculation
+            }
+
+            // Clear all LEDs first
+            for (uint8_t i = 83; i < 115; i++) {
+                rgb_matrix_set_color(i, RGB_OFF);
+            }
+
+            // Set the marquee group
+            HSV base_hsv;
+            if (bled_info.bled_color == COLOR_RAINBOW) {
+                base_hsv = (HSV){time * 2, 255, bled_info.bled_Brightness};
+            } else {
+                base_hsv.h = hsv_table[bled_info.bled_color - 1][0];
+                base_hsv.s = hsv_table[bled_info.bled_color - 1][1];
+                base_hsv.v = bled_info.bled_Brightness;
+            }
+
+            // Light up the group of LEDs
+            for (uint8_t j = 0; j < MARQUEE_GROUP_SIZE; j++) {
+                int16_t led_index = led_pos - j;
+                if (led_index >= 0 && led_index < MARQUEE_LED_COUNT) {
+                    uint8_t actual_led = 83 + led_index;
+
+                    // Create fading effect within the group
+                    uint8_t brightness_scale = 255 - (j * 45); // Fade: 255, 210, 165, 120, 75
+                    HSV     hsv              = base_hsv;
+                    hsv.v                    = scale8(hsv.v, brightness_scale);
+
+                    RGB rgb = hsv_to_rgb(hsv);
+                    rgb_matrix_set_color(actual_led, rgb.r, rgb.g, rgb.b);
+                }
+            }
+            break;
+        }
+
         default:
             break;
     }
 }
 
-void keyboard_post_init_user(void) {
+void bled_keyboard_post_init_user(void) {
     if (keymap_config.no_gui) {
         keymap_config.no_gui = false;
     }
     bled_info.raw = eeconfig_read_user();
 }
 
-void eeconfig_init_user(void) {
+void bled_eeconfig_init_user(void) {
     bled_info.bled_mode       = BLED_MODE_CYCLE;
-    bled_info.bled_Brightness = RGB_MATRIX_DEFAULT_VAL;
+    bled_info.bled_Brightness = UINT8_MAX;
     bled_info.bled_speed      = RGB_MATRIX_DEFAULT_SPD;
     bled_info.bled_color      = COLOR_RAINBOW;
     eeconfig_update_user(bled_info.raw);

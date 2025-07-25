@@ -8,13 +8,15 @@ enum custom_keycodes {
     BLED_Brightness,
     BLED_Speed,
     BLED_Color,
+    BLED_KEYCODE_END,
 };
 
 typedef enum {
     BLED_MODE_CYCLE,
-    BLED_MODE_NEON,
+    BLED_MODE_MARQUEE,
     BLED_MODE_SOLID,
     BLED_MODE_BREATHING,
+    BLED_MODE_NEON,
     BLED_MODE_OFF,
     BLED_MODE_COUNT,
 } bled_mode_t;
@@ -42,6 +44,9 @@ typedef union {
     };
 } bled_info_t;
 
-void bled_task(void);
+bool bled_process_record_user(uint16_t keycode, keyrecord_t *record);
+bool bled_rgb_matrix_indicators_user(void);
+void bled_keyboard_post_init_user(void);
+void bled_eeconfig_init_user(void);
 
 #endif // BLED_H
