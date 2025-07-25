@@ -164,8 +164,8 @@ static void bled_task(void) {
 
         case BLED_MODE_MARQUEE: {
 // Marquee effect with configurable group size
-#define MARQUEE_GROUP_SIZE 5 // Number of LEDs in each group
-#define MARQUEE_LED_COUNT 32 // Total LEDs (115 - 83 = 32)
+#define MARQUEE_GROUP_SIZE 15 // Number of LEDs in each group
+#define MARQUEE_LED_COUNT 32  // Total LEDs (115 - 83 = 32)
 
             uint8_t time         = scale16by8(g_rgb_timer, qadd8(bled_info.bled_speed / 8, 1));
             uint8_t cycle_length = MARQUEE_LED_COUNT * 2; // Simplified: just LED count * 2
@@ -203,7 +203,7 @@ static void bled_task(void) {
                     uint8_t actual_led = 83 + led_index;
 
                     // Create fading effect within the group
-                    uint8_t brightness_scale = 255 - (j * 45); // Fade: 255, 210, 165, 120, 75
+                    uint8_t brightness_scale = 255 - (j * 17); // Fade: 255, 210, 165, 120, 75
                     HSV     hsv              = base_hsv;
                     hsv.v                    = scale8(hsv.v, brightness_scale);
 
