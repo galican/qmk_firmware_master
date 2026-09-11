@@ -57,6 +57,7 @@
 #define LED_W_INDEX 30
 #define LED_E_INDEX 31
 #define LED_R_INDEX 32
+#define LED_Y_INDEX 34
 #define LED_LWIN_INDEX 72
 #define LED_CAPS_INDEX 43
 

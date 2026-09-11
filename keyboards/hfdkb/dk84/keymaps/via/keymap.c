@@ -58,12 +58,14 @@ static uint32_t key_press_status = 0;
 // static uint8_t  all_blink_cnt      = 0;
 // static uint32_t all_blink_time     = 0;
 // static RGB      all_blink_color    = {0};
-extern uint8_t             single_blink_cnt;
-extern uint8_t             single_blink_index;
-extern RGB                 single_blink_color;
-extern uint32_t            single_blink_time;
-extern bool                query_vol_flag;
-extern long_pressed_keys_t long_pressed_keys[];
+extern uint8_t  single_blink_cnt;
+extern uint8_t  single_blink_index;
+extern RGB      single_blink_color;
+extern uint32_t single_blink_time;
+extern bool     query_vol_flag;
+extern uint32_t EE_CLR_press_cnt;
+extern uint32_t EE_CLR_press_time;
+extern bool     EE_CLR_flag;
 
 // clang-format off
 
@@ -113,6 +115,134 @@ bool process_detected_host_os_user(os_variant_t detected_os) {
 }
 
 // static bool flask_held = false;
+typedef struct {
+    uint16_t physical_key;
+    uint16_t task_key;
+    uint32_t status_bit;
+    uint8_t  host;
+    uint8_t  led;
+    RGB      color;
+} flask_action_t;
+
+static const flask_action_t flask_actions[] = {
+    {
+        .physical_key = KC_1,
+        .task_key     = BT_HOST1,
+        .status_bit   = KEY_1_PRESSED,
+        .host         = DEVS_HOST1,
+        .led          = BT1_LED_INDEX,
+        .color        = BT1_LED_COLOR,
+    },
+    {
+        .physical_key = KC_2,
+        .task_key     = BT_HOST2,
+        .status_bit   = KEY_2_PRESSED,
+        .host         = DEVS_HOST2,
+        .led          = BT2_LED_INDEX,
+        .color        = BT2_LED_COLOR,
+    },
+    {
+        .physical_key = KC_3,
+        .task_key     = BT_HOST3,
+        .status_bit   = KEY_3_PRESSED,
+        .host         = DEVS_HOST3,
+        .led          = BT3_LED_INDEX,
+        .color        = BT3_LED_COLOR,
+    },
+    {
+        .physical_key = KC_ESC,
+        .task_key     = EE_CLR,
+        .status_bit   = KEY_ESC_PRESSED,
+    },
+};
+
+// 哪些按键的本次按下已被 FLASK 组合消费。
+static uint32_t flask_consumed = 0;
+
+// 最近一次 FLASK 组合所对应的任务。
+static uint16_t flask_task = KC_NO;
+
+static void flask_cancel_task(void) {
+    if (flask_task != KC_NO) {
+        long_press_cancel(flask_task, LONG_PRESS_SOURCE_FLASK);
+        flask_task = KC_NO;
+    }
+}
+
+static bool process_flask_long_press(uint16_t keycode, keyrecord_t *record) {
+    if (keycode == KC_FLASK) {
+        if (record->event.pressed) {
+            key_press_status |= KEY_FLASK_PRESSED;
+        } else {
+            key_press_status &= ~KEY_FLASK_PRESSED;
+            flask_cancel_task();
+
+            // 不清除 flask_consumed：
+            // 数字键/ESC 后续松开时仍然要吞掉释放事件。
+        }
+        return false;
+    }
+
+    for (uint8_t i = 0; i < sizeof(flask_actions) / sizeof(flask_actions[0]); i++) {
+        const flask_action_t *action = &flask_actions[i];
+
+        if (keycode != action->physical_key) {
+            continue;
+        }
+
+        if (record->event.pressed) {
+            key_press_status |= action->status_bit;
+
+            // 普通数字键/ESC 保持原来的行为。
+            if (!(key_press_status & KEY_FLASK_PRESSED)) {
+                return true;
+            }
+
+            flask_consumed |= action->status_bit;
+
+            // 切换组合目标时，取消此前的 FLASK 长按任务。
+            flask_cancel_task();
+
+            if (action->task_key != EE_CLR) {
+                // 保留原来的硬件模式限制：
+                // 开关不允许时不切换，也不启动对码。
+                if (gpio_read_pin(BT_MODE_SW_PIN)) {
+                    return false;
+                }
+
+                if (dev_info.devs != action->host) {
+                    bt_switch_mode(dev_info.devs, action->host, false);
+
+                    single_blink_cnt   = 6;
+                    single_blink_index = action->led;
+                    single_blink_color = action->color;
+                    single_blink_time  = timer_read32();
+                }
+            }
+
+            flask_task = action->task_key;
+            long_press_start(flask_task, LONG_PRESS_SOURCE_FLASK);
+            return false;
+        }
+
+        key_press_status &= ~action->status_bit;
+
+        if (flask_consumed & action->status_bit) {
+            flask_consumed &= ~action->status_bit;
+
+            // 旧目标释放，不能取消新目标的计时。
+            if (flask_task == action->task_key) {
+                flask_cancel_task();
+            }
+
+            return false;
+        }
+
+        return true;
+    }
+
+    return true;
+}
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     // if (keycode == KC_FLASK) {
@@ -136,16 +266,11 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     //             return false;
     //     }
     // }
+    if (!process_flask_long_press(keycode, record)) {
+        return false;
+    }
+
     switch (keycode) {
-        case KC_FLASK:
-            if (record->event.pressed) {
-                key_press_status |= KEY_FLASK_PRESSED;
-
-            } else {
-                key_press_status &= ~KEY_FLASK_PRESSED;
-            }
-            return false;
-
         case KC_M:
             if (record->event.pressed) {
                 key_press_status |= KEY_M_PRESSED;
@@ -157,7 +282,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                         }
                         eeconfig_update_keymap(&keymap_config);
                         single_blink_cnt   = 6;
-                        single_blink_color = (RGB){100 / 3, 100, 100};
+                        single_blink_color = (RGB){0xFF / 3, 0xFF, 0xFF};
                         if (timer_elapsed32(single_blink_time) >= 300) {
                             single_blink_time = timer_read32();
                         }
@@ -212,79 +337,6 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             }
             return true;
 
-        case KC_1:
-            if (record->event.pressed) {
-                key_press_status |= KEY_1_PRESSED;
-                if (key_press_status == FUN_BT1_MODE) {
-                    if ((dev_info.devs != DEVS_HOST1) && (!gpio_read_pin(BT_MODE_SW_PIN))) {
-                        bt_switch_mode(dev_info.devs, DEVS_HOST1, false);
-                        single_blink_cnt   = 6;
-                        single_blink_index = BT1_LED_INDEX;
-                        single_blink_color = (RGB)BT1_LED_COLOR;
-                        single_blink_time  = timer_read32();
-                    }
-                    // long_pressed_keys[0].press_time = timer_read32();
-                    return false;
-                }
-            } else {
-                key_press_status &= ~KEY_1_PRESSED;
-                long_pressed_keys[0].press_time = 0;
-            }
-            return true;
-
-        case KC_2:
-            if (record->event.pressed) {
-                key_press_status |= KEY_2_PRESSED;
-                if (key_press_status == FUN_BT2_MODE) {
-                    if ((dev_info.devs != DEVS_HOST2) && (!gpio_read_pin(BT_MODE_SW_PIN))) {
-                        bt_switch_mode(dev_info.devs, DEVS_HOST2, false);
-                        single_blink_cnt   = 6;
-                        single_blink_index = BT2_LED_INDEX;
-                        single_blink_color = (RGB)BT2_LED_COLOR;
-                        single_blink_time  = timer_read32();
-                    }
-                    // long_pressed_keys[1].press_time = timer_read32();
-                    return false;
-                }
-            } else {
-                key_press_status &= ~KEY_2_PRESSED;
-                long_pressed_keys[1].press_time = 0;
-            }
-            return true;
-
-        case KC_3:
-            if (record->event.pressed) {
-                key_press_status |= KEY_3_PRESSED;
-                if (key_press_status == FUN_BT3_MODE) {
-                    if ((dev_info.devs != DEVS_HOST3) && (!gpio_read_pin(BT_MODE_SW_PIN))) {
-                        bt_switch_mode(dev_info.devs, DEVS_HOST3, false);
-                        single_blink_cnt   = 6;
-                        single_blink_index = BT3_LED_INDEX;
-                        single_blink_color = (RGB)BT3_LED_COLOR;
-                        single_blink_time  = timer_read32();
-                    }
-                    // long_pressed_keys[2].press_time = timer_read32();
-                    return false;
-                }
-            } else {
-                key_press_status &= ~KEY_3_PRESSED;
-                long_pressed_keys[2].press_time = 0;
-            }
-            return true;
-
-        case KC_ESC:
-            if (record->event.pressed) {
-                key_press_status |= KEY_ESC_PRESSED;
-                if (key_press_status == FUN_FACTORY_RESET) {
-                    long_pressed_keys[3].press_time = timer_read32();
-                    return false;
-                }
-            } else {
-                key_press_status &= ~KEY_ESC_PRESSED;
-                long_pressed_keys[3].press_time = 0;
-            }
-            return true;
-
         default:
             break;
     }
@@ -298,7 +350,7 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
     };
     if ((key_press_status & KEY_FLASK_PRESSED) != 0) {
         for (uint8_t i = 0; i < (sizeof(leds) / sizeof(leds[0])); i++) {
-            rgb_matrix_set_color(leds[i], 0xFF, 0xF4, 0xE5);
+            rgb_matrix_set_color(leds[i], 0xFF / 3, 0xFF, 0xFF);
         }
     }
     return true;

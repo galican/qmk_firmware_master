@@ -8,7 +8,7 @@
     "usb": {
         "vid": "0x0C45",
         "pid": "0x0040",
-        "device_version": "1.0.5",
+        "device_version": "1.0.6",
         "suspend_wakeup_delay": 1000
     },
     "host": {
@@ -40,7 +40,7 @@
         "driver": "is31fl3733",
         "react_on_keyup": true,
         "sleep": true,
-        "max_brightness": 200,
+        "max_brightness": 160,
         "val_steps": 50,
         "speed_steps": 64,
         "hue_steps": 32,

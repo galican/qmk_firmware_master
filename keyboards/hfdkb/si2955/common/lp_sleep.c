@@ -196,9 +196,9 @@ static void exti_init(void) {
         // #    endif
 
 #    ifdef ENCODER_ENABLE
-        gpio_set_pin_input_high(C13);
-        _pal_lld_enablepadevent(PAL_PORT(C13), PAL_PAD(C13), PAL_EVENT_MODE_BOTH_EDGES);
-        pad_enbale_interrupt(PAL_PAD(C13));
+        // gpio_set_pin_input_high(C13);
+        // _pal_lld_enablepadevent(PAL_PORT(C13), PAL_PAD(C13), PAL_EVENT_MODE_BOTH_EDGES);
+        // pad_enbale_interrupt(PAL_PAD(C13));
 #    endif
     } else {
 #    ifdef MM_CABLE_PIN

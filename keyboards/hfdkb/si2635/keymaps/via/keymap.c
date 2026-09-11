@@ -108,10 +108,10 @@ const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
 // clang-format on
 
 // Blink effect related
-static uint8_t  single_blink_cnt     = 0;
-static uint8_t  single_blink_index   = 0;
-static RGB      single_blink_color   = {0};
-static uint32_t single_blink_time    = 0;
+uint8_t         single_blink_cnt     = 0;
+uint8_t         single_blink_index   = 0;
+RGB             single_blink_color   = {0};
+uint32_t        single_blink_time    = 0;
 static uint8_t  double_blink_cnt     = 0;
 static uint8_t  double_blink_index[] = {0, 0};
 static RGB      double_blink_color[] = {{0}, {0}};

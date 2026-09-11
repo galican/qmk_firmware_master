@@ -110,16 +110,54 @@ bool battery_low_warning_flag = false;
 //     {RGB_BLUE},
 // };
 
-// clang-format off
-long_pressed_keys_t long_pressed_keys[] = {
-  {.keycode = BT_HOST1, .press_time = 0, .event_cb = long_pressed_keys_cb, .press_hold_time = 3 * 1000},
-  {.keycode = BT_HOST2, .press_time = 0, .event_cb = long_pressed_keys_cb, .press_hold_time = 3 * 1000},
-  {.keycode = BT_HOST3, .press_time = 0, .event_cb = long_pressed_keys_cb,  .press_hold_time = 3 * 1000},
-//   {.keycode = BT_2_4G, .press_time = 0, .event_cb = long_pressed_keys_cb},
-//   {.keycode = RGB_TEST, .press_time = 0, .event_cb = long_pressed_keys_cb},
-//   {.keycode = EE_CLR, .press_time = 0, .event_cb = long_pressed_keys_cb,  .press_hold_time = 5 * 1000},
+static long_pressed_keys_t long_pressed_keys[] = {
+    {
+        .keycode         = BT_HOST1,
+        .press_hold_time = 3000,
+        .event_cb        = long_pressed_keys_cb,
+    },
+    {
+        .keycode         = BT_HOST2,
+        .press_hold_time = 3000,
+        .event_cb        = long_pressed_keys_cb,
+    },
+    {
+        .keycode         = BT_HOST3,
+        .press_hold_time = 3000,
+        .event_cb        = long_pressed_keys_cb,
+    },
+    {
+        .keycode         = EE_CLR,
+        .press_hold_time = 5000,
+        .event_cb        = long_pressed_keys_cb,
+    },
 };
-// clang-format on
+
+void long_press_start(uint16_t keycode, long_press_source_t source) {
+    for (uint8_t i = 0; i < NUM_LONG_PRESS_KEYS; i++) {
+        long_pressed_keys_t *item = &long_pressed_keys[i];
+
+        if (item->keycode == keycode) {
+            item->press_time = timer_read32();
+            item->source     = source;
+            item->active     = true;
+            return;
+        }
+    }
+}
+
+void long_press_cancel(uint16_t keycode, long_press_source_t source) {
+    for (uint8_t i = 0; i < NUM_LONG_PRESS_KEYS; i++) {
+        long_pressed_keys_t *item = &long_pressed_keys[i];
+
+        if (item->keycode == keycode) {
+            if (item->source == source) {
+                item->active = false;
+            }
+            return;
+        }
+    }
+}
 
 extern void register_mouse(uint8_t mouse_keycode, bool pressed);
 /** \brief Utilities for actions. (FIXME: Needs better description)
@@ -635,15 +673,10 @@ static bool bt_soft_switch_enabled(void) {
 #endif
 
 static bool process_record_other(uint16_t keycode, keyrecord_t *record) {
-    for (uint8_t i = 0; i < NUM_LONG_PRESS_KEYS; i++) {
-        if (keycode == long_pressed_keys[i].keycode) {
-            if (record->event.pressed) {
-                long_pressed_keys[i].press_time = timer_read32();
-            } else {
-                long_pressed_keys[i].press_time = 0;
-            }
-            break;
-        }
+    if (record->event.pressed) {
+        long_press_start(keycode, LONG_PRESS_SOURCE_DIRECT);
+    } else {
+        long_press_cancel(keycode, LONG_PRESS_SOURCE_DIRECT);
     }
 
     switch (keycode) {
@@ -843,9 +876,12 @@ static void long_pressed_keys_cb(uint16_t keycode) {
 
 static void long_pressed_keys_hook(void) {
     for (uint8_t i = 0; i < NUM_LONG_PRESS_KEYS; i++) {
-        if ((long_pressed_keys[i].press_time != 0) && (timer_elapsed32(long_pressed_keys[i].press_time) >= long_pressed_keys[i].press_hold_time)) {
-            long_pressed_keys[i].event_cb(long_pressed_keys[i].keycode);
-            long_pressed_keys[i].press_time = 0;
+        long_pressed_keys_t *item = &long_pressed_keys[i];
+
+        if (item->active && timer_elapsed32(item->press_time) >= item->press_hold_time) {
+            // 先结束计时，确保持续按住只触发一次。
+            item->active = false;
+            item->event_cb(item->keycode);
         }
     }
 }
@@ -1221,7 +1257,7 @@ static void battery_voltage_display(void) {
 
     if (bat_query_on) {
         for (uint8_t i = 0; i < led_count; i++) {
-            rgb_matrix_set_color(LED_POWER_LEVEL_TABLE[i], 0xFF, 0xF4, 0xE5);
+            rgb_matrix_set_color(LED_POWER_LEVEL_TABLE[i], 0xFF / 3, 0xFF, 0xFF);
         }
     }
 }
@@ -1350,7 +1386,6 @@ static void battery_low_warning(void) {
         active_notice            = BAT_NOTICE_NONE;
         battery_low_warning_flag = false;
         blink_on                 = false;
-        battery_low_warning_flag = false;
         return;
     }
 
@@ -1387,6 +1422,11 @@ static void battery_low_warning(void) {
         return;
     }
 
+    // 电量恢复到 20% 及以上，重新允许下一次 15% 提醒。
+    // 留出 5 个百分点，避免 15% 附近波动造成反复提醒。
+    if (percent >= 20) {
+        next_threshold = 15;
+    }
     /*
      * 每个电量节点只触发一次。
      * 若电量一次从 16% 跳到 9%，会先提示 15%，结束后再提示 10%，
@@ -1433,10 +1473,8 @@ static void battery_low_warning(void) {
             set_battery_warning_leds(0, 0, 0);
         }
     }
-    // else {
-    //     battery_low_warning_flag = false;
-    // }
 }
+
 /* ============================================== */
 
 // All indicator blink

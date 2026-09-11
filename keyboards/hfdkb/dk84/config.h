@@ -37,11 +37,11 @@
 #    define BT4_LED_INDEX 16
 #    define USB_LED_INDEX 20
 
-#    define BT1_LED_COLOR {0xFF, 0xF4, 0xE5}
-#    define BT2_LED_COLOR {0xFF, 0xF4, 0xE5}
-#    define BT3_LED_COLOR {0xFF, 0xF4, 0xE5}
-#    define BT4_LED_COLOR {0xFF, 0xF4, 0xE5}
-#    define USB_LED_COLOR {0xFF, 0xF4, 0xE5}
+#    define BT1_LED_COLOR {0xFF / 3, 0xFF, 0xFF}
+#    define BT2_LED_COLOR {0xFF / 3, 0xFF, 0xFF}
+#    define BT3_LED_COLOR {0xFF / 3, 0xFF, 0xFF}
+#    define BT4_LED_COLOR {0xFF / 3, 0xFF, 0xFF}
+#    define USB_LED_COLOR {0xFF / 3, 0xFF, 0xFF}
 #endif
 
 /* SPI Config for spi flash*/
@@ -83,7 +83,7 @@
 // #define LOGO_LED_INDEX 81
 
 #define LOW_BATTERY_COLOR 0xFF, 0x00, 0x00
-#define CHARGE_INDICATOR_COLOR 0xFF, 0xF4, 0xE5
+#define CHARGE_INDICATOR_COLOR 0xFF / 3, 0xFF, 0xFF
 
 #define LOW_BATTERY_BLINK_INTERVAL 500
 #define LOW_BATTERY_NOTICE_TIME 10000

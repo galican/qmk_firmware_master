@@ -33,12 +33,22 @@ typedef union {
 extern dev_info_t dev_info;
 extern bts_info_t bts_info;
 
+typedef enum {
+    LONG_PRESS_SOURCE_DIRECT, // Fn 层等直接产生的 BT_HOST1/2/3
+    LONG_PRESS_SOURCE_FLASK,
+} long_press_source_t;
+
 typedef struct {
     uint32_t press_time;
     uint32_t press_hold_time;
     uint16_t keycode;
     void (*event_cb)(uint16_t);
+    bool                active;
+    long_press_source_t source;
 } long_pressed_keys_t;
+
+void long_press_start(uint16_t keycode, long_press_source_t source);
+void long_press_cancel(uint16_t keycode, long_press_source_t source);
 
 /**
  * @brief bluetooth 初始化函数

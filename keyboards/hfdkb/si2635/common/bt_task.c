@@ -193,6 +193,7 @@ static bool     EE_CLR_flag       = false;
 uint8_t query_index[] = BAT_LEVEL_DISPLAY_INDEX;
 
 enum {
+    SLEEP_TIME_1_MIN,
     SLEEP_TIME_5_MIN,
     SLEEP_TIME_10_MIN,
     SLEEP_TIME_30_MIN,
@@ -200,6 +201,7 @@ enum {
 };
 
 static const uint32_t sleep_times[SLEEP_TIME_COUNT] = {
+    1UL * 60UL * 1000UL,
     5UL * 60UL * 1000UL,
     10UL * 60UL * 1000UL,
     30UL * 60UL * 1000UL,
@@ -215,6 +217,11 @@ static bool is_in_full_power_state = false;
 
 extern bool show_chrg;
 extern bool show_chrg_full;
+
+extern uint8_t  single_blink_cnt;
+extern uint8_t  single_blink_index;
+extern RGB      single_blink_color;
+extern uint32_t single_blink_time;
 
 #include "command.h"
 #include "action.h"
@@ -559,12 +566,12 @@ void bt_init(void) {
     if (!dev_info.raw) {
         dev_info.devs       = DEVS_USB;
         dev_info.last_devs  = DEVS_HOST1;
-        dev_info.sleep_mode = SLEEP_TIME_5_MIN;
+        dev_info.sleep_mode = SLEEP_TIME_1_MIN;
         eeconfig_update_user(dev_info.raw);
     }
 
     if (dev_info.sleep_mode >= SLEEP_TIME_COUNT) {
-        dev_info.sleep_mode = SLEEP_TIME_5_MIN;
+        dev_info.sleep_mode = SLEEP_TIME_1_MIN;
         eeconfig_update_user(dev_info.raw);
     }
 
@@ -971,6 +978,27 @@ static bool bt_process_record_other(uint16_t keycode, keyrecord_t *record) {
             if (record->event.pressed) {
                 dev_info.sleep_mode = (dev_info.sleep_mode + 1) % SLEEP_TIME_COUNT;
 
+                switch (dev_info.sleep_mode) {
+                    case SLEEP_TIME_1_MIN:
+                        single_blink_color = (RGB){100, 100, 100};
+                        break;
+                    case SLEEP_TIME_5_MIN:
+                        single_blink_color = (RGB){100, 0, 0};
+                        break;
+                    case SLEEP_TIME_10_MIN:
+                        single_blink_color = (RGB){0, 100, 0};
+                        break;
+                    case SLEEP_TIME_30_MIN:
+                        single_blink_color = (RGB){0, 0, 100};
+                        break;
+                    default:
+                        break;
+                }
+
+                single_blink_index = LED_Y_INDEX;
+                single_blink_cnt   = 6;
+                single_blink_time  = timer_read32();
+
                 eeconfig_update_user(dev_info.raw);
             }
         } break;
@@ -1224,7 +1252,7 @@ static void close_rgb(void) {
     uint8_t sleep_mode = dev_info.sleep_mode;
 
     if (sleep_mode >= SLEEP_TIME_COUNT) {
-        sleep_mode = SLEEP_TIME_5_MIN;
+        sleep_mode = SLEEP_TIME_1_MIN;
     }
 
     if (sober) {

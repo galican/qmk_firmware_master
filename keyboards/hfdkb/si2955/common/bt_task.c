@@ -1056,8 +1056,20 @@ void led_deconfig_all(void) {
         // gpio_write_pin(LED_CAPS_LOCK_PIN, 0);
         gpio_set_pin_output_open_drain(LED_CAPS_LOCK_PIN);
 
+#ifdef ENCODER_ENABLE
+        gpio_set_pin_output_open_drain(C14);
+        gpio_write_pin_low(C14);
+        gpio_set_pin_output_open_drain(C13);
+        gpio_write_pin_low(C13);
+#endif
+
         led_inited = false;
     }
+}
+
+void lp_recovery_hook(void) {
+    gpio_set_pin_input_high(C14);
+    gpio_set_pin_input_high(C13);
 }
 
 // static void led_off_standby(void) {
